@@ -91,6 +91,21 @@ To run the test suite on all supported interpreters, install
    $ tox
 
 
+FAQ
+---
+
+Why "Obelus"?
+^^^^^^^^^^^^^
+
+An `obelus <http://en.wikipedia.org/wiki/Obelus>`_ is a typographical
+character, a bit like an asterisk.
+
+Is there any documentation?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Not yet :-)
+
+
 .. _Tornado: http://www.tornadoweb.org/
 .. _Tulip: http://code.google.com/p/tulip/
 .. _Twisted: http://www.twistedmatrix.com/
