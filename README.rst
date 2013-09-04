@@ -2,8 +2,7 @@
 Obelus: Asterisk's best friend
 ==============================
 
-`Obelus <http://https://bitbucket.org/optiflowsrd/obelus/src>`_ is a
-Python library providing support for communication with the
+Obelus is a Python library providing support for communication with the
 `Asterisk <http://www.asterisk.org/>`_ telephony server.  It supports
 the `Asterisk Manager Interface (AMI) <http://asteriskdocs.org/en/3rd_Edition/asterisk-book-html-chunk/asterisk-AMI.html>`_
 and the `Asterisk Gateway Interface (AGI) <http://asteriskdocs.org/en/3rd_Edition/asterisk-book-html-chunk/AGI.html>`_.
@@ -12,6 +11,7 @@ and the `Asterisk Gateway Interface (AGI) <http://asteriskdocs.org/en/3rd_Editio
 Quick links
 -----------
 
+* Project page: https://pypi.python.org/pypi/obelus/
 * Source code, issue tracker: https://bitbucket.org/optiflowsrd/obelus
 
 
