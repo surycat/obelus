@@ -12,7 +12,6 @@ if not tornado:
                       "http://www.tornadoweb.org/")
 
 from ..tornadosupport import TornadoAdapter
-from .protocol import AMIProtocol
 
 
 if __name__ == "__main__":
@@ -31,11 +30,8 @@ if __name__ == "__main__":
 
     log = logging.getLogger(__name__)
 
-    class CLIProtocol(examplecli.CLIProtocol):
-        pass
-
     loop = IOLoop.instance()
-    proto = CLIProtocol(loop, options)
+    proto = examplecli.CLIProtocol(loop, options)
     adapter = TornadoAdapter(proto)
 
     stream = IOStream(socket.socket(), loop)

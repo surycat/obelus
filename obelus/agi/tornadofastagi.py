@@ -21,6 +21,10 @@ from ..tornadosupport import TornadoAdapter
 
 
 class FastAGIServer(TCPServer):
+    """
+    A TCPServer subclass that will delegate all incoming connections
+    to a FastAGIExecutor instance.
+    """
 
     def __init__(self, executor, *args, **kwargs):
         TCPServer.__init__(self, *args, **kwargs)

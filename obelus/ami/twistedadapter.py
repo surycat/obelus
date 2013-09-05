@@ -60,15 +60,13 @@ if __name__ == "__main__":
 
     log = logging.getLogger(__name__)
 
-    class CLIProtocol(examplecli.CLIProtocol):
-        pass
-
     # connectProtocol() appeared in 13.1, but we want to support at least 11.0+.
     # (endpoints appeared in 10.1).
 
     class CLIFactory(Factory):
         def buildProtocol(self, addr):
-            return TwistedAdapter(CLIProtocol(reactor, options))
+            proto = examplecli.CLIProtocol(reactor, options)
+            return TwistedAdapter(proto)
 
     endpoint = TCP4ClientEndpoint(reactor, options.host, options.port)
     d = endpoint.connect(CLIFactory())

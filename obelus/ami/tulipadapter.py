@@ -27,11 +27,8 @@ if __name__ == "__main__":
     logging.getLogger('tulip').setLevel('WARNING')
     log = logging.getLogger(__name__)
 
-    class CLIProtocol(examplecli.CLIProtocol):
-        pass
-
     loop = tulip.get_event_loop()
-    proto = CLIProtocol(loop, options)
+    proto = examplecli.CLIProtocol(loop, options)
     fut = tulip.async(loop.create_connection(lambda: proto,
                                              options.host, options.port))
     def cb(fut):
