@@ -12,29 +12,6 @@ if not tulip:
                       "http://code.google.com/p/tulip/")
 
 
-class TulipAMIAdapter(tulip.Protocol):
-    """
-    Adapter mixin to make an AMI protocol class usable as a Tulip
-    Protocol.  Use in this way:
-
-        class MyAMIProtocol(AMIProtocol, TulipAMIAdapter):
-            pass
-
-    (the inheritance order is important! TulipAMIAdapter should be
-     specified last)
-    """
-
-    def connection_made(self, transport):
-        self.transport = transport
-        super(TulipAMIAdapter, self).connection_made(transport)
-
-    def write(self, data):
-        self.transport.write(data)
-
-    def close_connection(self):
-        self.transport.close()
-
-
 if __name__ == "__main__":
     import logging
     import signal
@@ -50,7 +27,7 @@ if __name__ == "__main__":
     logging.getLogger('tulip').setLevel('WARNING')
     log = logging.getLogger(__name__)
 
-    class CLIProtocol(examplecli.CLIProtocol, TulipAMIAdapter):
+    class CLIProtocol(examplecli.CLIProtocol):
         pass
 
     loop = tulip.get_event_loop()

@@ -14,39 +14,33 @@ if not twisted:
 from twisted.internet.protocol import Protocol, Factory
 
 
-class TwistedAMIAdapter(Protocol):
+class TwistedAdapter(Protocol):
     """
-    Adapter mixin to make an AMI protocol class usable as a Twisted
-    Protocol.  Use in this way:
-
-        class MyAMIProtocol(AMIProtocol, TwistedAMIAdapter):
-            pass
-
-    (the inheritance order is important! TwistedAMIAdapter should be
-     specified last)
     """
 
-    # Standard Twisted Protocol methods
-    def connectionMade(self):
-        self.connection_made(self.transport)
-
-    def connectionLost(self, failure):
-        self.connection_lost(failure.value)
-
-    def dataReceived(self, data):
-        self.data_received(data)
-
-    # Other methods
-    def connection_made(self, transport=None):
-        """Placeholder for multiple inheritance."""
+    def __init__(self, protocol):
+        self.protocol = protocol
 
     def connection_lost(self, exc):
-        """Placeholder for multiple inheritance."""
+        self.protocol.connection_lost(exc)
 
+    def data_received(self, data):
+        self.protocol.data_received(data)
+
+    def connectionMade(self):
+        self.protocol.connection_made(self)
+
+    def connectionLost(self, failure):
+        self.protocol.connection_lost(failure.value)
+
+    def dataReceived(self, data):
+        self.protocol.data_received(data)
+
+    # Transport methods
     def write(self, data):
         self.transport.write(data)
 
-    def close_connection(self):
+    def close(self):
         self.transport.loseConnection()
 
 
@@ -66,7 +60,7 @@ if __name__ == "__main__":
 
     log = logging.getLogger(__name__)
 
-    class CLIProtocol(examplecli.CLIProtocol, TwistedAMIAdapter):
+    class CLIProtocol(examplecli.CLIProtocol):
         pass
 
     # connectProtocol() appeared in 13.1, but we want to support at least 11.0+.
@@ -74,7 +68,7 @@ if __name__ == "__main__":
 
     class CLIFactory(Factory):
         def buildProtocol(self, addr):
-            return CLIProtocol(reactor, options)
+            return TwistedAdapter(CLIProtocol(reactor, options))
 
     endpoint = TCP4ClientEndpoint(reactor, options.host, options.port)
     d = endpoint.connect(CLIFactory())

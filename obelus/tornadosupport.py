@@ -1,24 +1,29 @@
 
-class _BaseTornadoAdapter(object):
+
+class TornadoAdapter(object):
     """
-    Base Tornado adapter for protocol classes.
+    Tornado adapter for protocol classes.
     """
 
-    _stream = None
+    stream = None
+
+    def __init__(self, protocol):
+        self.protocol = protocol
 
     def bind_stream(self, stream):
         """
-        Bind this protocol to the given IOStream.  The stream should
-        be already connected, as connection_made() will be called immediately.
+        Bind the protocol to the given IOStream.  The stream should
+        be already connected, as the protocol's connection_made() will
+        be called immediately.
         """
-        self._stream = stream
-        self._stream.read_until_close(self._final_cb, self._streaming_cb)
-        self._stream.set_close_callback(self._close_cb)
-        self.connection_made(stream)
+        self.stream = stream
+        self.stream.read_until_close(self._final_cb, self._streaming_cb)
+        self.stream.set_close_callback(self._close_cb)
+        self.protocol.connection_made(self)
 
     def _streaming_cb(self, data):
         if data:
-            self.data_received(data)
+            self.protocol.data_received(data)
 
     def _final_cb(self, data):
         # This is called when reading is finished, either because
@@ -27,16 +32,18 @@ class _BaseTornadoAdapter(object):
         self._close_cb()
 
     def _close_cb(self, *args):
-        if self._stream is not None:
-            stream = self._stream
-            self._stream = None
-            self.connection_lost(stream.error)
+        if self.stream is not None:
+            stream = self.stream
+            self.stream = None
+            self.protocol.connection_lost(stream.error)
 
     def write(self, data):
-        if self._stream is None:
+        if self.stream is None:
             raise ValueError("write() on a non-connected protocol")
-        self._stream.write(data)
+        self.stream.write(data)
 
-    def close_connection(self):
-        if self._stream is not None:
-            self._stream.close()
+    def close(self):
+        if self.stream is not None:
+            self.stream.close()
+
+

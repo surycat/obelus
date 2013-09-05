@@ -30,7 +30,7 @@ class CLISession(AGISession):
             resp = yield self.proto.send_command(["hangup"])
             log.info("Hangup result: %d", resp.result)
         finally:
-            self.proto.close_connection()
+            self.proto.transport.close()
 
 
 class CLIProtocol(AGIProtocol):

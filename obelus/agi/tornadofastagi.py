@@ -17,28 +17,7 @@ try:
 except ImportError:
     from tornado.netutil import TCPServer
 
-from ..tornadosupport import _BaseTornadoAdapter
-
-
-class FastAGIAdapter(_BaseTornadoAdapter):
-    """
-    Adapter mixin to make an AGI protocol class compatible with Tornado
-    streams.  Use in this way:
-
-        class MyAGIProtocol(AGIProtocol, TornadoFastAGIAdapter):
-            pass
-
-    (the inheritance order is important! TornadoFastAGIAdapter should be
-     specified last)
-
-    When an incoming TCP connection is established, call this protocol's
-    bind_stream() method with the IOStream as single argument.
-    """
-    def connection_made(self, transport=None):
-        self.bind_session()
-
-    def connection_lost(self, exc):
-        self.unbind_session()
+from ..tornadosupport import TornadoAdapter
 
 
 class FastAGIServer(TCPServer):
@@ -49,14 +28,14 @@ class FastAGIServer(TCPServer):
 
     def handle_stream(self, stream, remote_addr):
         proto = self.executor.make_protocol()
-        proto.bind_stream(stream)
+        adapter = TornadoAdapter(proto)
+        adapter.bind_stream(stream)
 
 
 if __name__ == "__main__":
     from tornado.ioloop import IOLoop
 
-    from .fastagi import FastAGIExecutor, TCP_PORT
-    from .protocol import AGIProtocol
+    from .fastagi import FastAGIProtocol, FastAGIExecutor, TCP_PORT
     from .session import AGISession
     from . import examplecli
 
@@ -71,7 +50,7 @@ if __name__ == "__main__":
 
     loop = IOLoop.instance()
 
-    class CLIProtocol(examplecli.CLIProtocol, FastAGIAdapter):
+    class CLIProtocol(examplecli.CLIProtocol, FastAGIProtocol):
         pass
 
     executor = FastAGIExecutor(CLIProtocol)

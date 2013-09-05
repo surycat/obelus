@@ -39,7 +39,7 @@ class CLIProtocol(AMIProtocol):
 
     def login_failed(self, exc):
         log.error("Failed logging in: %s", exc)
-        self.close_connection()
+        self.transport.close()
 
 
 def create_parser(description):

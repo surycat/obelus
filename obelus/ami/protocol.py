@@ -47,6 +47,7 @@ class BaseAMIProtocol(LineReceiver):
     eol = '\r\n'
 
     logger = logging.getLogger(__name__)
+    transport = None
 
     _response_types = {'success', 'follows', 'error', 'goodbye'}
     _headers_for_response_follows = {'Privilege', 'ActionID'}
@@ -66,6 +67,15 @@ class BaseAMIProtocol(LineReceiver):
             raise ValueError("Expected a key/value pair, got %r"
                              % (line,))
         return key, value.lstrip()
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def connection_lost(self, exc):
+        pass
+
+    def write(self, data):
+        self.transport.write(data)
 
     def greeting_received(self, api_name, api_version):
         """

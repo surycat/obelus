@@ -11,29 +11,8 @@ if not tornado:
     raise ImportError("tornado is required for this module to work: "
                       "http://www.tornadoweb.org/")
 
-from ..tornadosupport import _BaseTornadoAdapter
+from ..tornadosupport import TornadoAdapter
 from .protocol import AMIProtocol
-
-
-class TornadoAMIAdapter(_BaseTornadoAdapter):
-    """
-    Adapter mixin to make an AMI protocol class compatible with Tornado
-    streams.  Use in this way:
-
-        class MyAMIProtocol(AMIProtocol, TornadoAdapter):
-            pass
-
-    (the inheritance order is important! TornadoAdapter should be
-     specified last)
-
-    At runtime, connect an IOStream to your Asterisk Manager endpoint,
-    and call the protocol instance's bind_stream() method.
-    """
-    def connection_made(self, transport=None):
-        """Placeholder for multiple inheritance."""
-
-    def connection_lost(self, exc):
-        """Placeholder for multiple inheritance."""
 
 
 if __name__ == "__main__":
@@ -52,15 +31,16 @@ if __name__ == "__main__":
 
     log = logging.getLogger(__name__)
 
-    class CLIProtocol(examplecli.CLIProtocol, TornadoAMIAdapter):
+    class CLIProtocol(examplecli.CLIProtocol):
         pass
 
     loop = IOLoop.instance()
     proto = CLIProtocol(loop, options)
+    adapter = TornadoAdapter(proto)
 
     stream = IOStream(socket.socket(), loop)
     stream.connect((options.host, options.port),
-                   lambda: proto.bind_stream(stream))
+                   lambda: adapter.bind_stream(stream))
 
     try:
         loop.start()

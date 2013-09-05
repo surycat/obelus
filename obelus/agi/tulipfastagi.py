@@ -12,39 +12,11 @@ if not tulip:
                       "http://code.google.com/p/tulip/")
 
 
-class TulipFastAGIAdapter(tulip.Protocol):
-    """
-    Adapter mixin to make an AGI protocol class usable as a Tulip
-    Protocol.  Use in this way:
-
-        class MyAMIProtocol(AGIProtocol, TulipFastAGIAdapter):
-            pass
-
-    (the inheritance order is important! TulipFastAGIAdapter should be
-     specified last)
-    """
-
-    def connection_made(self, transport):
-        self.transport = transport
-        super(TulipFastAGIAdapter, self).connection_made(transport)
-        self.bind_session()
-
-    def connection_lost(self, exc):
-        self.unbind_session()
-
-    def write(self, data):
-        self.transport.write(data)
-
-    def close_connection(self):
-        self.transport.close()
-
-
 if __name__ == "__main__":
     import logging
     import signal
 
-    from .fastagi import FastAGIExecutor, TCP_PORT
-    from .protocol import AGIProtocol
+    from .fastagi import FastAGIProtocol, FastAGIExecutor, TCP_PORT
     from .session import AGISession
     from . import examplecli
 
@@ -59,7 +31,7 @@ if __name__ == "__main__":
     # Tulip's logger is very chatty, dampen it
     logging.getLogger('tulip').setLevel('WARNING')
 
-    class CLIProtocol(examplecli.CLIProtocol, TulipFastAGIAdapter):
+    class CLIProtocol(examplecli.CLIProtocol, FastAGIProtocol):
         pass
 
     executor = FastAGIExecutor(CLIProtocol)

@@ -96,6 +96,15 @@ class AGIProtocol(LineReceiver):
         self._commands = collections.deque()
         self._session = None
 
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def connection_lost(self, exc):
+        pass
+
+    def write(self, data):
+        self.transport.write(data)
+
     def bind_session(self):
         """
         """
