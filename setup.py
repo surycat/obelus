@@ -33,4 +33,6 @@ setup(
         'Topic :: Communications :: Telephony',
         ],
     long_description=long_description,
+    keywords=["asterisk", "manager", "gateway", "interface", "AMI", "AGI",
+              "twisted", "tornado", "tulip"],
 )
