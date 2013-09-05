@@ -84,7 +84,6 @@ class BaseAMIProtocol(LineReceiver):
         if not isinstance(line, str):
             # Python 3 only
             line = line.decode(self.encoding)
-        self.logger.debug("Incoming line: %r", line)
         if self._state == 'init':
             # Parse greeting line
             name, version = line.strip().split("/")
@@ -214,7 +213,7 @@ class AMIProtocol(BaseAMIProtocol):
         except KeyError:
             action_id = headers['ActionID'] = self._next_action_id()
         data = self.serialize_message(headers)
-        self.logger.debug("Writing action: %r", data)
+        self.logger.debug("Sending action: %r", data)
         self.write(data)
         handler = Handler()
         handler._action_id = action_id
@@ -292,7 +291,7 @@ class AMIProtocol(BaseAMIProtocol):
         Called when an *event* is received for which no handler has
         been registered.
         """
-        self.logger.info("Unhandled event type %r", event.name)
+        self.logger.debug("Unhandled event type %r", event.name)
 
     def response_received(self, resp):
         action_id = resp.headers['ActionID']
