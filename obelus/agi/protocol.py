@@ -294,13 +294,13 @@ class AGIProtocol(LineReceiver):
         if result < 0:
             # A negative result signals failure to execute a command.
             # Unfortunately, Asterisk doesn't give any error description.
-            command._on_exception(AGICommandFailure(body))
+            command.set_exception(AGICommandFailure(body))
         else:
-            command._on_result(Response(result, variables, data))
+            command.set_result(Response(result, variables, data))
 
     def _got_error_response(self, code, message):
         command = self._pop_command()
         exc_class = _agi_errors.get(code, AGIError)
         exc = exc_class(message)
-        command._on_exception(exc)
+        command.set_exception(exc)
 

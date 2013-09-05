@@ -1,15 +1,50 @@
 
+import functools
 import logging
 
 
 class Handler(object):
 
-    # User-overridable attributes
-    on_result = None
-    on_exception = None
+    _result_cb = None
+    _exception_cb = None
 
     _cancelled = False
     _triggered = False
+    _canceller = None
+
+    @property
+    def on_result(self):
+        """
+        Success callback. Will be called with the handler's result if
+        the underlying operation was successful.
+        """
+        return self._result_cb
+
+    @on_result.setter
+    def on_result(self, cb):
+        if self._result_cb is not None:
+            raise ValueError("on_result already set, cannot override")
+        if not callable(cb):
+            raise TypeError("on_result should be callable, got %r"
+                            % type(cb))
+        self._result_cb = cb
+
+    @property
+    def on_exception(self):
+        """
+        Failure callback. Will be called with the handler's exception if
+        the underlying operation failed.
+        """
+        return self._exception_cb
+
+    @on_exception.setter
+    def on_exception(self, cb):
+        if self._exception_cb is not None:
+            raise ValueError("on_exception already set, cannot override")
+        if not callable(cb):
+            raise TypeError("on_exception should be callable, got %r"
+                            % type(cb))
+        self._exception_cb = cb
 
     def cancel(self):
         """
@@ -17,27 +52,49 @@ class Handler(object):
         TODO clarify semantics -- is this useful?
         """
         self._cancelled = True
-        self._proto._cancel_action(self)
+        if self._canceller is not None:
+            self._canceller(self)
+            self._canceller = None
 
-    def _on_result(self, result):
+    def set_result(self, result):
         if self._cancelled:
             return
         if self._triggered:
             raise RuntimeError("Cannot trigger handler a second time")
         self._triggered = True
-        if self.on_result is not None:
-            self.on_result(result)
+        if self._result_cb is not None:
+            self._result_cb(result)
 
-    def _on_exception(self, exc):
+    def set_exception(self, exc):
         if self._cancelled:
             return
         if self._triggered:
             raise RuntimeError("Cannot trigger handler a second time")
         self._triggered = True
-        if self.on_exception is None:
+        if self._exception_cb is None:
             raise exc
         else:
-            self.on_exception(exc)
+            self._exception_cb(exc)
+
+    @classmethod
+    def aggregate(cls, handlers):
+        result_handler = cls()
+        n = len(handlers)
+        results = [None] * n
+        pending = set(range(n))
+        def _on_result(i, res):
+            if not result_handler._triggered:
+                pending.remove(i)
+                results[i] = res
+                if not pending:
+                    result_handler.set_result(results)
+        def _on_exception(exc):
+            if not result_handler._triggered:
+                result_handler.set_exception(exc)
+        for i, handler in enumerate(handlers):
+            handler.on_result = functools.partial(_on_result, i)
+            handler.on_exception = _on_exception
+        return result_handler
 
 
 class LineReceiver(object):

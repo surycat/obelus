@@ -269,7 +269,7 @@ class AMIProtocol(BaseAMIProtocol):
                 # We merge the end event's headers into the EventList's,
                 # since they can carry useful information.
                 event_list.headers.update(event.headers)
-                action_handler._on_result(event_list)
+                action_handler.set_result(event_list)
                 return
             elif event_type:
                 self.logger.warn("Invalid EventList header in event: %r"
@@ -304,7 +304,7 @@ class AMIProtocol(BaseAMIProtocol):
         if resp.type == 'error':
             del self._actions[action_id]
             exc = ActionError(resp.headers.get('Message', ''))
-            handler._on_exception(exc)
+            handler.set_exception(exc)
         elif resp.type in ('success', 'goodbye', 'follows'):
             event_type = resp.headers.get('EventList', '').lower()
             if event_type == 'start':
@@ -314,7 +314,7 @@ class AMIProtocol(BaseAMIProtocol):
                 self.logger.warn("Invalid EventList header in response: %r"
                                  % (event_type,))
             del self._actions[action_id]
-            handler._on_result(resp)
+            handler.set_result(resp)
         else:
             # Can't come here
             assert 0
