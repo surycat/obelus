@@ -9,7 +9,8 @@ except ImportError:
     # Python 2
     from urllib import unquote as unquote_to_bytes
 
-from .protocol import _CommandHandler, AGIChannel
+from ..common import Handler
+from .protocol import AGIChannel
 
 
 class _AsyncAGIChannel(AGIChannel):
@@ -18,7 +19,7 @@ class _AsyncAGIChannel(AGIChannel):
 
     def __init__(self, executor):
         self.executor = executor
-        # Command ID => _CommandHandler
+        # Command ID => Handler
         self._commands = {}
 
     def send_command_line(self, line):
@@ -96,7 +97,7 @@ class AsyncAGIExecutor(object):
     def _send_command_line(self, proto, line):
         self._check_bound()
         channel = proto.channel
-        handler = _CommandHandler(proto)
+        handler = Handler()
         command_id = self._new_command_id()
         headers = {
             'Command': self._encode_agi_data(proto, line.rstrip()),

@@ -2,7 +2,7 @@
 from functools import partial
 import logging
 
-from .protocol import _CommandHandler
+from ..common import Handler
 
 
 class AGISession(object):
@@ -25,7 +25,7 @@ class AGISession(object):
         self._bind_coroutine_handler(gen, handler)
 
     def _bind_coroutine_handler(self, gen, handler):
-        if not isinstance(handler, _CommandHandler):
+        if not isinstance(handler, Handler):
             raise TypeError(handler.__class__)
         handler.on_result = partial(self._on_coroutine_result, gen, True)
         handler.on_exception = partial(self._on_coroutine_result, gen, False)

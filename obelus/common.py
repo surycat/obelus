@@ -2,7 +2,7 @@
 import logging
 
 
-class _BaseHandler(object):
+class Handler(object):
 
     # User-overridable attributes
     on_result = None

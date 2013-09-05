@@ -5,7 +5,7 @@ Event-driven, framework-agnostic implementation of the AMI protocol.
 import collections
 import logging
 
-from ..common import _BaseHandler, LineReceiver
+from ..common import Handler, LineReceiver
 
 
 _BaseResponse = collections.namedtuple('_BaseResponse',
@@ -35,11 +35,8 @@ class ActionError(RuntimeError):
     """
 
 
-class _ActionHandler(_BaseHandler):
-
-    def __init__(self, action_id, proto):
-        self._action_id = action_id
-        self._proto = proto
+#class _ActionHandler(_BaseHandler):
+    #pass
 
 
 class BaseAMIProtocol(LineReceiver):
@@ -223,7 +220,8 @@ class AMIProtocol(BaseAMIProtocol):
         data = self.serialize_message(headers)
         self.logger.debug("Writing action: %r", data)
         self.write(data)
-        handler = _ActionHandler(action_id, self)
+        handler = Handler()
+        handler._action_id = action_id
         self._actions[action_id] = handler
         return handler
 

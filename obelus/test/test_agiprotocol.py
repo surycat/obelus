@@ -7,8 +7,9 @@ import unittest
 from mock import Mock, ANY
 
 from obelus.agi.protocol import (
-    AGIProtocol, ProtocolAGIChannel, _CommandHandler, Response,
+    AGIProtocol, ProtocolAGIChannel, Response,
     AGICommandFailure, AGIUnknownCommand, AGIForbiddenCommand, AGISyntaxError)
+from obelus.common import Handler
 from obelus.test import main, watch_logging
 
 
@@ -152,13 +153,13 @@ class AGIProtocolTest(unittest.TestCase):
         p = self.proto_idle()
         h = p.send_command(("set", "variable", "foo", "bar"))
         p.channel.write.assert_called_once_with(b'set variable foo bar\n')
-        self.assertIsInstance(h, _CommandHandler)
+        self.assertIsInstance(h, Handler)
 
     def test_send_command_simple_list(self):
         p = self.proto_idle()
         h = p.send_command(["set", "variable", "foo", "bar"])
         p.channel.write.assert_called_once_with(b'set variable foo bar\n')
-        self.assertIsInstance(h, _CommandHandler)
+        self.assertIsInstance(h, Handler)
 
     def test_send_command_escaping_1(self):
         p = self.proto_idle()

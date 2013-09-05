@@ -6,8 +6,8 @@ import unittest
 from mock import Mock, ANY
 
 from obelus.ami.protocol import (
-    BaseAMIProtocol, AMIProtocol, Event, Response, EventList,
-    _ActionHandler, ActionError)
+    BaseAMIProtocol, AMIProtocol, Event, Response, EventList, ActionError)
+from obelus.common import Handler
 from obelus.test import main
 
 
@@ -247,7 +247,7 @@ class AMIProtocolTest(ProtocolTestBase, unittest.TestCase):
         p = self.ready_proto()
         p.write = Mock()
         a = p.send_action('Hello', OrderedDict({'foo': 'bar'}))
-        self.assertIsInstance(a, _ActionHandler)
+        self.assertIsInstance(a, Handler)
         p.write.assert_called_once_with(
             b"foo: bar\r\n"
             b"Action: Hello\r\n"
@@ -255,7 +255,7 @@ class AMIProtocolTest(ProtocolTestBase, unittest.TestCase):
             b"\r\n")
         self.assertEqual(a._action_id, '1')
         a = p.send_action('Hi', {'Channel': 'SIP/foo'})
-        self.assertIsInstance(a, _ActionHandler)
+        self.assertIsInstance(a, Handler)
         (data,), _ = p.write.call_args
         lines = data.splitlines()
         self.assertIn(b"ActionID: 2", lines)

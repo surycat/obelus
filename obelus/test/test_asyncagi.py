@@ -8,10 +8,11 @@ from mock import Mock, ANY
 
 from obelus.agi.asyncagi import AsyncAGIExecutor
 from obelus.agi.protocol import (
-    AGIProtocol, _CommandHandler, Response,
+    AGIProtocol, Response,
     AGICommandFailure, AGIUnknownCommand, AGIForbiddenCommand, AGISyntaxError)
 from obelus.agi.session import AGISession
 from obelus.ami.protocol import AMIProtocol, ActionError
+from obelus.common import Handler
 from obelus.test import main, watch_logging
 
 
@@ -287,7 +288,7 @@ class CommandSendingTest(TestHelpers, unittest.TestCase):
         e = self.executor
         ami = self.ami
         h = p.send_command(("set", "variable", "foo", "bar quux"))
-        self.assertIsInstance(h, _CommandHandler)
+        self.assertIsInstance(h, Handler)
         ami.write.assert_called_once_with(ANY)
         (data,), _ = ami.write.call_args
         lines = data.splitlines()

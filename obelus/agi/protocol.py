@@ -6,7 +6,7 @@ import collections
 import logging
 import re
 
-from ..common import _BaseHandler, LineReceiver
+from ..common import Handler, LineReceiver
 
 
 class AGIError(RuntimeError):
@@ -48,12 +48,6 @@ class Response(_BaseResponse):
     __slots__ = ()
 
 
-class _CommandHandler(_BaseHandler):
-
-    def __init__(self, proto):
-        self._proto = proto
-
-
 class AGIChannel(object):
 
     def send_command_line(self, line):
@@ -67,7 +61,7 @@ class ProtocolAGIChannel(AGIChannel):
     """
 
     def send_command_line(self, line):
-        handler = _CommandHandler(self.proto)
+        handler = Handler()
         self.write(line)
         # Expect responses in sequential order.
         self.proto._push_command(handler)
