@@ -35,10 +35,6 @@ class ActionError(RuntimeError):
     """
 
 
-#class _ActionHandler(_BaseHandler):
-    #pass
-
-
 class BaseAMIProtocol(LineReceiver):
     """
     Implementation of the AMI protocol syntax.
