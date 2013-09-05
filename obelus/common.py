@@ -4,6 +4,10 @@ import logging
 
 
 class Handler(object):
+    """
+    A Handler holds callbacks which will be called when an ongoing
+    operation terminates.  Also known as Future, Promise, Deferred, etc.
+    """
 
     _result_cb = None
     _exception_cb = None
@@ -78,6 +82,10 @@ class Handler(object):
 
     @classmethod
     def aggregate(cls, handlers):
+        """
+        Return a new Handler which will trigger when all the given
+        handlers have successfully fired, or when one of them fails.
+        """
         result_handler = cls()
         n = len(handlers)
         results = [None] * n
