@@ -29,6 +29,9 @@ class Call(object):
     event handlers.
     """
 
+    _call_id = None
+    _action_id = None
+
     def _bind_to_action(self, call_id, action_id):
         self._call_id = call_id
         self._action_id = action_id
@@ -112,6 +115,19 @@ class CallManager(object):
         self._call_id = i + 1
         return str(i)
 
+    def queued_calls(self):
+        """
+        Return a set of all queued calls.
+        """
+        return set(self._calls.values())
+
+    def tracked_calls(self):
+        """
+        Return a set of currently tracked calls (i.e. queued *and*
+        successfully originated).  This is a subset of queued_calls().
+        """
+        return set(self._calls.values()) - set(self._actions.values())
+
     def setup_event_handlers(self):
         """
         Setup the AMI event handlers required for call tracking.
@@ -138,6 +154,11 @@ class CallManager(object):
         setup more server-side filters if you are interested in other
         events.
         """
+        # We are interesting in "call" events, as well as in those
+        # events that mention our tracking variable (normally, it's
+        # only one SetVar event per successfully originated call).
+        # This spares us the bursts of NewExten, VarSet and AGIExec events
+        # that can occur on non-trivial Asterisk setups.
         filters = ['Privilege: call,all',
                    'Variable: ' + self._tracking_variable]
         handlers = [self.ami.send_action('Filter',
@@ -147,9 +168,15 @@ class CallManager(object):
         return Handler.aggregate(handlers)
 
     def originate(self, call, headers, variables=None):
+        """
+        Originate a *call* with the given *headers* (and, optionally,
+        call-specific *variables*).  *call* should be a Call instance.
+        """
         if not isinstance(call, Call):
             raise TypeError("expected a Call instance, got %r"
                             % call.__class__)
+        if call._call_id is not None:
+            raise ValueError("cannot reuse Call instance, need a new one")
         call_id = self._new_call_id()
         variables = variables or {}
         variables[self._tracking_variable] = call_id
@@ -229,7 +256,7 @@ class CallManager(object):
 
     def on_dial(self, event):
         h = event.headers
-        unique_id = h['UniqueID']  # XXX casing!
+        unique_id = h['UniqueID']  # casing!
         call = self._unique_ids.get(unique_id)
         if call is None:
             log.debug("Dial: unknown UniqueID %r, ignoring", unique_id)
