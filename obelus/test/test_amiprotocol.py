@@ -132,6 +132,10 @@ class BaseAMIProtocolTest(ProtocolTestBase, unittest.TestCase):
             })
         self.feed(EVENT_HANGUP)
         p.event_received.assert_called_once_with(expected)
+        (evt,), _ = p.event_received.call_args
+        # Headers are case-insensitive
+        self.assertEqual(evt.headers['privilege'], 'call,all')
+        self.assertEqual(evt.headers['Privilege'], 'call,all')
         self.assertEqual(p._state, 'idle')
         p.event_received.reset_mock()
         self.feed(EVENT_HANGUP)
@@ -154,6 +158,10 @@ class BaseAMIProtocolTest(ProtocolTestBase, unittest.TestCase):
             }, [])
         self.feed(CORE_SETTINGS_RESPONSE)
         p.response_received.assert_called_once_with(core_settings)
+        (resp,), _ = p.response_received.call_args
+        # Headers are case-insensitive
+        self.assertEqual(resp.headers['amiversion'], '1.1')
+        self.assertEqual(resp.headers['AmiVersion'], '1.1')
         p.response_received.reset_mock()
         self.feed(ERROR_RESPONSE)
         p.response_received.assert_called_once_with(error)

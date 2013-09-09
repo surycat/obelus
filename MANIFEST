@@ -2,6 +2,7 @@
 README.rst
 setup.py
 obelus/__init__.py
+obelus/casedict.py
 obelus/common.py
 obelus/tornadosupport.py
 obelus/agi/__init__.py
@@ -23,4 +24,5 @@ obelus/test/__main__.py
 obelus/test/test_agiprotocol.py
 obelus/test/test_amiprotocol.py
 obelus/test/test_asyncagi.py
+obelus/test/test_casedict.py
 obelus/test/test_linereceiver.py

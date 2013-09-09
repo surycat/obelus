@@ -5,6 +5,7 @@ Event-driven, framework-agnostic implementation of the AMI protocol.
 import collections
 import logging
 
+from ..casedict import CaseDict
 from ..common import Handler, LineReceiver
 
 
@@ -108,7 +109,7 @@ class BaseAMIProtocol(LineReceiver):
             key, value = self._split_key_value(line)
             if key == 'Response':
                 self._state = 'in-response'
-                self._headers = {}
+                self._headers = CaseDict()
                 self._payload = []
                 self._resp_type = value.lower()
                 if self._resp_type not in self._response_types:
@@ -116,7 +117,7 @@ class BaseAMIProtocol(LineReceiver):
                                      % (self.resp_type))
             elif key == 'Event':
                 self._state = 'in-event'
-                self._headers = {}
+                self._headers = CaseDict()
                 self._event_type = value
             else:
                 raise ValueError("Unexpected first message line %r" % (line,))
