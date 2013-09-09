@@ -48,6 +48,8 @@ class BaseAMIProtocol(LineReceiver):
 
     logger = logging.getLogger(__name__)
     transport = None
+    # If set to True, all incoming messages will be logged in debug level
+    trace_messages = False
 
     _response_types = {'success', 'follows', 'error', 'goodbye'}
     _headers_for_response_follows = {'Privilege', 'ActionID'}
@@ -159,10 +161,13 @@ class BaseAMIProtocol(LineReceiver):
 
     def _response_complete(self):
         resp = Response(self._resp_type, self._headers, self._payload)
+        self.logger.debug("Received response: %r", resp)
         self.response_received(resp)
 
     def _event_complete(self):
         event = Event(self._event_type, self._headers)
+        if self.trace_messages:
+            self.logger.debug("Received event: %r", event)
         self.event_received(event)
 
     def response_received(self, resp):
