@@ -48,6 +48,10 @@ class Call(object):
         except AttributeError:
             return super(Call, self).__str__()
 
+    # XXX should the state notification callbacks get the logical
+    # channel number? (i.e. 1 for the first created channel, 2 for the
+    # second...)
+
     def call_queued(self):
         """
         Called when a call is queued (i.e. when the Originate command
@@ -275,7 +279,7 @@ class CallManager(object):
         if call is None:
             log.debug("Newstate: unknown UniqueID %r, ignoring", unique_id)
             return
-        state = h['ChannelState']
+        state = int(h['ChannelState'])
         state_desc = h['ChannelStateDesc']
         if state != call._state:
             call._state = state

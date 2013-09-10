@@ -49,6 +49,30 @@ DIAL_START = Event('Dial',
                     'Channel': CHANNEL_2,
                     'Dialstring': '0sxqaw'})
 
+DIAL_END = Event('Dial',
+                 {'SubEvent': 'End',
+                  'UniqueID': UNIQUE_ID_2,
+                  'Channel': CHANNEL_2,
+                  'DialStatus': 'BUSY'})
+
+NEWSTATE_1_OTHER = Event('Newstate',
+                         {'ChannelState': '5',
+                          'Uniqueid': '1378719683.629',
+                          'Channel': 'SIP/0sxqaw-00000041',
+                          'ChannelStateDesc': 'Ringing'})
+
+NEWSTATE_1 = Event('Newstate',
+                   {'ChannelState': '5',
+                    'Uniqueid': UNIQUE_ID,
+                    'Channel': CHANNEL,
+                    'ChannelStateDesc': 'Ringing'})
+
+NEWSTATE_2 = Event('Newstate',
+                   {'ChannelState': '6',
+                    'Uniqueid': UNIQUE_ID_2,
+                    'Channel': CHANNEL_2,
+                    'ChannelStateDesc': 'Up'})
+
 
 class CallManagerTest(ProtocolTestBase, unittest.TestCase):
 
@@ -208,9 +232,9 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         # Ignored (unknown channel even though it's probably related)
         event = Event('Hangup',
                       {'Cause-txt': 'Unknown',
-                       'Uniqueid': '1378719573.626',
+                       'Uniqueid': UNIQUE_ID_2,
                        'Cause': '0',
-                       'Channel': 'Local/6004@default-00000118;2'})
+                       'Channel': CHANNEL_2})
         cm.ami.event_received(event)
         self.assertEqual(call.event_calls, ['call_queued'])
         # This one triggers the call's end
@@ -223,7 +247,7 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         self.assertEqual(call.event_calls, ['call_queued', 'call_ended'])
         call.call_ended.assert_called_once_with(0, 'Unknown')
 
-    def test_dial_started(self):
+    def test_dialing_started(self):
         cm, call = self.tracked_call()
         # The LocalBridge events helps track the second channel, on which
         # the dialing will happen.
@@ -232,6 +256,34 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm.ami.event_received(DIAL_START)
         self.assertEqual(call.event_calls, ['call_queued', 'dialing_started'])
         call.dialing_started.assert_called_once_with()
+
+    def test_dialing_finished(self):
+        cm, call = self.tracked_call()
+        cm.ami.event_received(LOCAL_BRIDGE)
+        cm.ami.event_received(DIAL_START)
+        cm.ami.event_received(DIAL_END)
+        self.assertEqual(call.event_calls, ['call_queued', 'dialing_started',
+                                            'dialing_finished'])
+        call.dialing_finished.assert_called_once_with('BUSY')
+
+    def test_state_events(self):
+        cm, call = self.tracked_call()
+        cm.ami.event_received(LOCAL_BRIDGE)
+        cm.ami.event_received(DIAL_START)
+        cm.ami.event_received(NEWSTATE_1_OTHER)
+        self.assertEqual(call.event_calls, ['call_queued', 'dialing_started'])
+        cm.ami.event_received(NEWSTATE_1)
+        self.assertEqual(call.event_calls,
+                         ['call_queued', 'dialing_started', 'call_state_changed'])
+        call.call_state_changed.assert_called_once_with(5, 'Ringing')
+        # call_state_changed not called again if the state doesn't change
+        cm.ami.event_received(NEWSTATE_1)
+        call.call_state_changed.assert_called_once_with(5, 'Ringing')
+        cm.ami.event_received(NEWSTATE_2)
+        self.assertEqual(call.event_calls,
+                         ['call_queued', 'dialing_started',
+                          'call_state_changed', 'call_state_changed'])
+        call.call_state_changed.assert_called_with(6, 'Up')
 
 
 if __name__ == "__main__":
