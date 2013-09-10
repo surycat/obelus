@@ -2,6 +2,9 @@ syntax: glob
 *.pyc
 *.pyo
 *.egg-info/
+.coverage
 .tox/
 build/
 dist/
+htmlcov/
+
