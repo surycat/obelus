@@ -73,6 +73,18 @@ NEWSTATE_2 = Event('Newstate',
                     'Channel': CHANNEL_2,
                     'ChannelStateDesc': 'Up'})
 
+HANGUP_REJECTED_1 = Event('Hangup',
+                          {'Cause-txt': 'Call Rejected',
+                           'Uniqueid': UNIQUE_ID_2,
+                           'Cause': '21',
+                           'Channel': CHANNEL_2})
+
+HANGUP_REJECTED_2 = Event('Hangup',
+                          {'Cause-txt': 'Call Rejected',
+                           'Uniqueid': UNIQUE_ID,
+                           'Cause': '21',
+                           'Channel': CHANNEL})
+
 
 class CallManagerTest(ProtocolTestBase, unittest.TestCase):
 
@@ -284,6 +296,25 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
                          ['call_queued', 'dialing_started',
                           'call_state_changed', 'call_state_changed'])
         call.call_state_changed.assert_called_with(6, 'Up')
+
+    def test_call_ended(self):
+        cm, call = self.tracked_call()
+        cm.ami.event_received(LOCAL_BRIDGE)
+        cm.ami.event_received(HANGUP_REJECTED_1)
+        self.assertEqual(call.event_calls, ['call_queued'])
+        cm.ami.event_received(HANGUP_REJECTED_2)
+        self.assertEqual(call.event_calls, ['call_queued', 'call_ended'])
+        call.call_ended.assert_called_once_with(21, 'Call Rejected')
+
+    def test_call_ended_2(self):
+        # Same as test_call_ended(), but Hangups received in reverse order.
+        cm, call = self.tracked_call()
+        cm.ami.event_received(LOCAL_BRIDGE)
+        cm.ami.event_received(HANGUP_REJECTED_2)
+        self.assertEqual(call.event_calls, ['call_queued'])
+        cm.ami.event_received(HANGUP_REJECTED_1)
+        self.assertEqual(call.event_calls, ['call_queued', 'call_ended'])
+        call.call_ended.assert_called_once_with(21, 'Call Rejected')
 
 
 if __name__ == "__main__":
