@@ -5,10 +5,10 @@ import unittest
 
 from mock import Mock, ANY
 
-from obelus.ami.calls import Call, CallManager
+from obelus.ami.calls import Call, CallManager, OriginateError
 from obelus.ami.protocol import (
     BaseAMIProtocol, AMIProtocol, Event, Response, EventList, ActionError)
-from obelus.test import main
+from obelus.test import main, watch_logging
 from obelus.test.test_amiprotocol import ProtocolTestBase
 
 
@@ -22,10 +22,16 @@ class MockCall(Call):
             'call_state_changed',
             'dialing_started',
             'dialing_finished',
-            'call_finished']:
-            setattr(self, meth_name, Mock(
-                side_effect=lambda *args:
-                    partial(self.event_calls.append, meth_name)))
+            'call_ended']:
+            def side_effect(meth_name=meth_name):
+                def mocked(*args):
+                    self.event_calls.append(meth_name)
+                return mocked
+            setattr(self, meth_name, Mock(side_effect=side_effect()))
+
+
+UNIQUE_ID = '1378719573.625'
+CHANNEL = 'Local/6004@default-00000118;1'
 
 
 class CallManagerTest(ProtocolTestBase, unittest.TestCase):
@@ -40,6 +46,26 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm = CallManager(self.ami)
         cm._tracking_variable = 'X_TRACK'
         return cm
+
+    def queued_call(self):
+        cm = self.call_manager()
+        call = self.call()
+        cm.ami._action_id = 1
+        cm.ami.write = Mock()
+        cm.originate(call, {"Foo": "Bar"})
+        resp = Response('success', {'ActionID': '1'}, [])
+        cm.ami.response_received(resp)
+        return cm, call
+
+    def tracked_call(self):
+        cm, call = self.queued_call()
+        event = Event('VarSet',
+                      {'Variable': 'X_TRACK',
+                       'Value': '1',
+                       'Channel': CHANNEL,
+                       'Uniqueid': UNIQUE_ID})
+        cm.ami.event_received(event)
+        return cm, call
 
     def test_init(self):
         ami = self.protocol_factory()
@@ -90,9 +116,96 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm.originate(call, {"Foo": "Bar"})
         sa.assert_called_once_with(
             "Originate", {"Foo": "Bar"}, {"X_TRACK": "1"})
+        self.assertIs(call.manager, cm)
         # The call is still not queued: we wait for the AMI's response
         self.assertEqual(cm.queued_calls(), set())
         self.assertEqual(cm.tracked_calls(), set())
+        self.assertEqual(call.event_calls, [])
+
+    def test_sync_originate_failure(self):
+        # Synchronous failure: the originate action's response is a failure
+        cm = self.call_manager()
+        call = self.call()
+        cm.ami._action_id = 1
+        cm.ami.write = Mock()
+        cm.originate(call, {"Foo": "Bar"})
+        resp = Response('error', {'Message': 'Extension does not exist.',
+                                  'ActionID': '1'}, [])
+        cm.ami.response_received(resp)
+        self.assertEqual(call.event_calls, ['call_failed'])
+        self.assert_called_once_with_exc(call.call_failed, ActionError)
+
+    def test_call_queued(self):
+        cm, call = self.queued_call()
+        self.assertEqual(call.event_calls, ['call_queued'])
+        call.call_queued.assert_called_once_with()
+        self.assertEqual(cm.queued_calls(), {call})
+        self.assertEqual(cm.tracked_calls(), set())
+
+    def test_async_originate_failure(self):
+        # Early asynchronous failure: the originate action's response is
+        # a success, but a failed OriginateResponse event comes just after
+        cm, call = self.queued_call()
+        event = Event('OriginateResponse',
+                      {'Uniqueid': '<null>',
+                       'Reason': '0',
+                       'ActionID': '1',
+                       'Response': 'Failure'})
+        cm.ami.event_received(event)
+        self.assertEqual(call.event_calls, ['call_queued', 'call_failed'])
+        exc = self.assert_called_once_with_exc(call.call_failed, OriginateError)
+        self.assertEqual(exc.reason, 0)
+
+    def test_channel_matching(self):
+        cm, call = self.queued_call()
+        # This one is ignored
+        event = Event('Newchannel',
+                      {'Uniqueid': UNIQUE_ID,
+                       'ChannelState': '0',
+                       'Channel': CHANNEL,
+                       'ChannelStateDesc': 'Down'})
+        cm.ami.event_received(event)
+        self.assertEqual(cm.tracked_calls(), set())
+        # Not the right variable value => ignored too
+        event = Event('VarSet',
+                      {'Variable': 'X_TRACK',
+                       'Value': '42',
+                       'Channel': CHANNEL,
+                       'Uniqueid': UNIQUE_ID})
+        with watch_logging('obelus.ami.calls', level='WARN') as w:
+            cm.ami.event_received(event)
+        self.assertEqual(cm.tracked_calls(), set())
+        self.assertEqual(len(w.output), 1)
+        # This one sets up the matching
+        event = Event('VarSet',
+                      {'Variable': 'X_TRACK',
+                       'Value': '1',
+                       'Channel': CHANNEL,
+                       'Uniqueid': UNIQUE_ID})
+        cm.ami.event_received(event)
+        self.assertEqual(cm.queued_calls(), {call})
+        self.assertEqual(cm.tracked_calls(), {call})
+
+    def test_early_hangup(self):
+        # Test getting a Hangup without an earlier LocalBridge
+        cm, call = self.tracked_call()
+        # Ignored (unknown channel even though it's probably related)
+        event = Event('Hangup',
+                      {'Cause-txt': 'Unknown',
+                       'Uniqueid': '1378719573.626',
+                       'Cause': '0',
+                       'Channel': 'Local/6004@default-00000118;2'})
+        cm.ami.event_received(event)
+        self.assertEqual(call.event_calls, ['call_queued'])
+        # This one triggers the call's end
+        event = Event('Hangup',
+                      {'Cause-txt': 'Unknown',
+                       'Uniqueid': UNIQUE_ID,
+                       'Cause': '0',
+                       'Channel': CHANNEL})
+        cm.ami.event_received(event)
+        self.assertEqual(call.event_calls, ['call_queued', 'call_ended'])
+        call.call_ended.assert_called_once_with(0, 'Unknown')
 
 
 if __name__ == "__main__":

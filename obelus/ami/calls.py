@@ -37,7 +37,7 @@ class Call(object):
         self._action_id = action_id
 
     def _bind_to_channel(self, first_unique_id):
-        # Channel unique ids related to this call
+        # Alive channels related to this call
         self._unique_ids = {first_unique_id}
         self._state = None
         self._state_desc = None
@@ -77,9 +77,9 @@ class Call(object):
         Called when dialing the call has finished with the given *status*.
         """
 
-    def call_finished(self, cause, cause_desc):
+    def call_ended(self, cause, cause_desc):
         """
-        Called when the call is finished.  *cause* is the numeric cause
+        Called when the call ends.  *cause* is the numeric cause
         sent by Asterisk, *cause_desc* its textual description.
         """
 
@@ -252,7 +252,7 @@ class CallManager(object):
         call._unique_ids.remove(unique_id)
         if not call._unique_ids:
             del self._calls[call._call_id]
-            call.call_finished(h['Cause'], h.get('Cause-txt', ''))
+            call.call_ended(int(h['Cause'], 10), h.get('Cause-txt', ''))
 
     def on_dial(self, event):
         h = event.headers
