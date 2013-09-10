@@ -32,6 +32,22 @@ class MockCall(Call):
 
 UNIQUE_ID = '1378719573.625'
 CHANNEL = 'Local/6004@default-00000118;1'
+UNIQUE_ID_2 = '1378719573.626'
+CHANNEL_2 = 'Local/6004@default-00000118;2'
+
+LOCAL_BRIDGE = Event('LocalBridge',
+                     {'Uniqueid2': UNIQUE_ID_2,
+                      'Uniqueid1': UNIQUE_ID,
+                      'Channel2': 'Local/6004@default-00000118;2',
+                      'Channel1': CHANNEL_2,
+                      'Context': 'default'})
+
+DIAL_START = Event('Dial',
+                   {'DestUniqueID': '1378719683.629',
+                    'SubEvent': 'Begin',
+                    'UniqueID': UNIQUE_ID_2,
+                    'Channel': CHANNEL_2,
+                    'Dialstring': '0sxqaw'})
 
 
 class CallManagerTest(ProtocolTestBase, unittest.TestCase):
@@ -206,6 +222,16 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm.ami.event_received(event)
         self.assertEqual(call.event_calls, ['call_queued', 'call_ended'])
         call.call_ended.assert_called_once_with(0, 'Unknown')
+
+    def test_dial_started(self):
+        cm, call = self.tracked_call()
+        # The LocalBridge events helps track the second channel, on which
+        # the dialing will happen.
+        cm.ami.event_received(LOCAL_BRIDGE)
+        self.assertEqual(call.event_calls, ['call_queued'])
+        cm.ami.event_received(DIAL_START)
+        self.assertEqual(call.event_calls, ['call_queued', 'dialing_started'])
+        call.dialing_started.assert_called_once_with()
 
 
 if __name__ == "__main__":
