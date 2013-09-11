@@ -89,6 +89,75 @@ Here are the methods which should be implemented by a transport
    "Bidirectional Stream Transports" and "Stream Protocols"
    in :pep:`3156`.
 
+Writing an adapter
+""""""""""""""""""
+
+An adapter should implement the two required transport methods
+(:meth:`write`, :meth:`close`), and be able to call the three
+aforementioned protocol methods (:meth:`connection_made`,
+:meth:`data_received`, :meth:`connection_lost`).
+
+
+Asterisk Management Interface
+-----------------------------
+
+The :abbr:`AMI (Asterisk Management Interface)` allows you to connect
+to a well-known TCP port on your Asterisk server.  You can then emit
+commands ("actions") to it, receive response and asynchronous events
+sent by the server.
+
+You can interact with the AMI using the :class:`obelus.ami.AMIProtocol`.
+
+To send actions, call the :meth:`~obelus.ami.AMIProtocol.send_action`
+method.  To listen to specific events, call the
+:meth:`~obelus.ami.AMIProtocol.register_event_handler` method.
+
+.. note::
+   The first action you'll send should be the ``login`` action with
+   appropriate ``username`` and ``secret`` headers.
+
+.. note::
+   What actions you can emit and what events you can receive depends
+   on the Asterisk configuration (especially the manager.conf file).
+   Please consult the Asterisk docs.
+
+.. seealso::
+   Unofficial `Asterisk manager API <http://www.voip-info.org/wiki/view/Asterisk+manager+API>`_
+   documentation at voip-info.org.
+
+
+Asterisk Gateway Interface
+--------------------------
+
+The :abbr:`AGI (Asterisk Gateway Interface)` works in reverse.  You cannot
+"connect" using the AGI to your Asterisk instance.  Rather, Asterisk will
+initiate an AGI communication whenever its dialplan tells it to do so.
+
+AGI is a very simple command / response protocol.  The AGI-implementing
+application can only send commands, to which Asterisk replies when it has
+finished.  No events cannot be notified.  Furthermore, an AGI communication
+happens on a well-defined channel (in the Asterisk sense) and cannot cross
+that boundary.
+
+There are several ways an AGI communication can be initiated by Asterisk,
+depending on its configuration:
+
+* By executing a script on the filesystem, like a Web server would
+  execute a CGI script (hence the name).  The communication is carried
+  over stdin and stdout, until either end closes the pipe.  This is
+  "traditional" AGI or *AGI* in short.
+
+* By contacting a TCP server listening on a given host and port.  If
+  the server accepts the incoming connection, the communication is
+  carried over the resulting TCP connection, until the connection is
+  terminated by either end.  This is called *"FastAGI"* (by analogy
+  with FastCGI, perhaps).
+
+* By encapsulating the AGI communication over a series of AMI events
+  and actions.  This is called *"Async AGI"*.
+
+Obelus provides support for FastAGI and Async AGI (using
+:class:`~obelus.agi.AsyncAGIExecutor`).
 
 
 .. _Tornado: http://www.tornadoweb.org/
