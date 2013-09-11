@@ -7,6 +7,11 @@ class Handler(object):
     """
     A Handler holds callbacks which will be called when an ongoing
     operation terminates.  Also known as Future, Promise, Deferred, etc.
+
+    Generally, you won't create Handler objects yourself.  Instead,
+    a producer will create it for you, and you will set the
+    :attr:`on_result` and :attr:`on_exception` attributes to be
+    notified of the output of the operation.
     """
 
     _result_cb = None

@@ -6,6 +6,7 @@ docs/api_agiprotocol.rst
 docs/api_amiprotocol.rst
 docs/api_asyncagiexecutor.rst
 docs/api_callmanager.rst
+docs/api_handler.rst
 docs/apidocs.rst
 docs/conf.py
 docs/index.rst

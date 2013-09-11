@@ -13,6 +13,7 @@ Quick links
 
 * Project page: https://pypi.python.org/pypi/obelus/
 * Source code, issue tracker: https://bitbucket.org/optiflowsrd/obelus
+* Documentation (incomplete): https://obelus.readthedocs.org
 
 
 Features
@@ -99,11 +100,6 @@ Why "Obelus"?
 
 An `obelus <http://en.wikipedia.org/wiki/Obelus>`_ is a typographical
 character, a bit like an asterisk.
-
-Is there any documentation?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Not yet :-)
 
 
 .. _Tornado: http://www.tornadoweb.org/

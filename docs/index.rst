@@ -20,6 +20,7 @@ Quick links
 
 * Project page: https://pypi.python.org/pypi/obelus/
 * Source code, issue tracker: https://bitbucket.org/optiflowsrd/obelus
+* Documentation (incomplete): https://obelus.readthedocs.org
 
 
 Features
