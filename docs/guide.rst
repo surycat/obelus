@@ -1,0 +1,96 @@
+
+User's Guide
+============
+
+Philosophy
+----------
+
+Obelus, as a network programming library, doesn't want to be tied to
+a particular framework.  Some people want to use `Twisted`_, others
+`Tornado`_, others `Tulip`_.  The solution is to provide APIs that
+are framework-agnostic.  Everyone can then write their own adapters,
+though Obelus provides a couple of them
+(:class:`~obelus.tornadosupport.TornadoAdapter`,
+:class:`~obelus.twistedsupport.TwistedAdapter`).
+
+Still, to avoid inventing yet another API, it was decided to settle
+on :pep:`3156`-like protocols.
+
+.. note::
+   `Tulip`_ doesn't need any adapter: Obelus protocols can be used
+   directly.
+
+
+Bytes and strings
+"""""""""""""""""
+
+As a library that works both under Python 2 and Python 3, Obelus has
+to be careful about its bytes / test separation model.  Since Asterisk
+itself doesn't seem very careful in this regard, the following choice
+was made:
+
+* Under Python 2, all text and data is represented using the :class:`str`
+  class.
+
+* Under Python 3, binary data (going in and out of protocols) uses
+  :class:`bytes` objects, but all high-level data (such as command and
+  action names and parameters) uses :class:`str` objects.  An utf-8
+  encoding is implied by default, but this can be changed.  Encoding
+  and decoding is handled by the protocols.
+
+Protocols and transports
+""""""""""""""""""""""""
+
+.. note::
+   This section is only useful if you are writing your own protocol
+   adapter, rather than using one of the provided ones.
+
+A protocol is a class (or instance) implementing a particular network
+protocol.  Obelus provides :class:`~obelus.ami.AMIProtocol` and
+:class:`~obelus.agi.AGIProtocol`.  Protocols don't do any I/O on their
+own: they don't need any socket or file-like object.  Rather, they use
+event-driven programming and callbacks.
+
+Here are the standard event-driven methods on a protocol:
+
+.. method:: data_received(data)
+
+   Signal that *data* has been received and should be processed by
+   the protocol.  Note that the protocol may only buffer the data,
+   if e.g. it is incomplete.
+
+   *data* should be a bytestring.
+
+.. method:: connection_made(transport)
+
+   Signal the protocol that the connection is established, and can
+   be accessed (written to, or closed) using the given *transport*
+   object.
+
+.. method:: connection_lost(exc)
+
+   Signal the protocol that the connection is lost, for whatever
+   reason.  If *exc* is not None, it is an exception instance
+   giving information about the error that marked the connection lost.
+
+
+Here are the methods which should be implemented by a transport
+(which is generally also your adapter instance):
+
+.. method:: write(data)
+
+   Write the *data* (a bytestring) on the underlying connection.
+
+.. method:: close()
+
+   Close the underlying connection.
+
+.. seealso::
+   "Bidirectional Stream Transports" and "Stream Protocols"
+   in :pep:`3156`.
+
+
+
+.. _Tornado: http://www.tornadoweb.org/
+.. _Tulip: http://code.google.com/p/tulip/
+.. _Twisted: http://www.twistedmatrix.com/

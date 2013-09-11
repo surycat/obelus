@@ -14,8 +14,10 @@ docs/api_tornadoadapter.rst
 docs/api_twistedadapter.rst
 docs/apidocs.rst
 docs/conf.py
+docs/guide.rst
 docs/index.rst
 docs/make.bat
+docs/requirements.txt
 obelus/__init__.py
 obelus/casedict.py
 obelus/common.py

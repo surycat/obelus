@@ -22,7 +22,6 @@ Quick links
 * Source code, issue tracker: https://bitbucket.org/optiflowsrd/obelus
 * Documentation (incomplete): https://obelus.readthedocs.org
 
-
 Features
 --------
 
@@ -36,14 +35,12 @@ Features
   frameworks.
 * Unit-tested.
 
-
 Limitations
 -----------
 
 * The API is currently low-level: it abstracts away protocol syntax and
   communication sequences, but doesn't try to expose Asterisk concepts
   in a particular way.
-
 
 Requirements
 ------------
@@ -61,6 +58,7 @@ Documentation
 """""""""""""
 
 .. toctree::
+   guide
    apidocs
 
 .. _Tornado: http://www.tornadoweb.org/

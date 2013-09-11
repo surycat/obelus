@@ -1,2 +1,4 @@
+sphinx
 Twisted
+cloud_sptheme
 
