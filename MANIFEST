@@ -7,6 +7,8 @@ docs/api_amiprotocol.rst
 docs/api_asyncagiexecutor.rst
 docs/api_callmanager.rst
 docs/api_handler.rst
+docs/api_tornadoadapter.rst
+docs/api_twistedadapter.rst
 docs/apidocs.rst
 docs/conf.py
 docs/index.rst
@@ -15,6 +17,7 @@ obelus/__init__.py
 obelus/casedict.py
 obelus/common.py
 obelus/tornadosupport.py
+obelus/twistedsupport.py
 obelus/agi/__init__.py
 obelus/agi/asyncagi.py
 obelus/agi/examplecli.py

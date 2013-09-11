@@ -106,7 +106,7 @@ class LineReceiver(object):
 
     def data_received(self, data):
         """
-        Call this when some data is received.
+        Call this when some *data* (a bytestring) is received.
         """
         if self._chunks is None:
             self._chunks = []

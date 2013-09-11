@@ -11,37 +11,9 @@ if not twisted:
     raise ImportError("Twisted is required for this module to work: "
                       "https://twistedmatrix.com/")
 
-from twisted.internet.protocol import Protocol, Factory
+from twisted.internet.protocol import Factory
 
-
-class TwistedAdapter(Protocol):
-    """
-    """
-
-    def __init__(self, protocol):
-        self.protocol = protocol
-
-    def connection_lost(self, exc):
-        self.protocol.connection_lost(exc)
-
-    def data_received(self, data):
-        self.protocol.data_received(data)
-
-    def connectionMade(self):
-        self.protocol.connection_made(self)
-
-    def connectionLost(self, failure):
-        self.protocol.connection_lost(failure.value)
-
-    def dataReceived(self, data):
-        self.protocol.data_received(data)
-
-    # Transport methods
-    def write(self, data):
-        self.transport.write(data)
-
-    def close(self):
-        self.transport.loseConnection()
+from ..twistedsupport import TwistedAdapter
 
 
 if __name__ == "__main__":

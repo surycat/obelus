@@ -83,7 +83,7 @@ class BaseAMIProtocol(LineReceiver):
     def greeting_received(self, api_name, api_version):
         """
         Called when the AMI's initial greeting line is received.
-        Typical valeus for *api_name* and *api_version* are
+        Typical values for *api_name* and *api_version* are
         "Asterisk Call Manager" and "1.1", respectively.
 
         Override this method to do something with said information.
@@ -218,6 +218,10 @@ class AMIProtocol(BaseAMIProtocol):
 
     def send_action(self, name, headers, variables=()):
         """
+        Send the AMI action with the given *name* (a str object)
+        and *headers* (a dict mapping names onto values).
+        Return a Handler which will be fired when the AMI returns a
+        response for the action.
         """
         if variables:
             vars_list = headers.setdefault('Variable', [])
