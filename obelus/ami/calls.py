@@ -31,22 +31,31 @@ class Call(object):
 
     _call_id = None
     _action_id = None
+    manager = None
 
-    def _bind_to_action(self, call_id, action_id):
+    def _bind(self, manager, call_id):
+        self.manager = manager
         self._call_id = call_id
-        self._action_id = action_id
-
-    def _bind_to_channel(self, first_unique_id):
-        # Alive channels related to this call
-        self._unique_ids = {first_unique_id}
         self._state = None
         self._state_desc = None
+        self._unique_ids = set()
 
     def __str__(self):
         try:
             return "Call #%s" % self._call_id
         except AttributeError:
             return super(Call, self).__str__()
+
+    def unique_ids(self):
+        """
+        Get the alive channels related this call.
+        Return a list of unique ids.
+        """
+        try:
+            return sorted(self._unique_ids)
+        except AttributeError:
+            pass
+        raise ValueError("Call not originated")
 
     # XXX should the state notification callbacks get the logical
     # channel number? (i.e. 1 for the first created channel, 2 for the
@@ -179,16 +188,16 @@ class CallManager(object):
         if not isinstance(call, Call):
             raise TypeError("expected a Call instance, got %r"
                             % call.__class__)
-        if call._call_id is not None:
+        if call.manager is not None:
             raise ValueError("cannot reuse Call instance, need a new one")
         call_id = self._new_call_id()
         variables = variables or {}
         variables[self._tracking_variable] = call_id
         a = self.ami.send_action('Originate', headers, variables)
-        call.manager = self
+        call._bind(self, call_id)
         def _call_queued(resp):
             action_id = resp.headers['ActionID']
-            call._bind_to_action(call_id, action_id)
+            call._action_id = action_id
             self._actions[action_id] = call
             self._calls[call_id] = call
             call.call_queued()
@@ -225,7 +234,7 @@ class CallManager(object):
             return
         log.info("Got UniqueID %r for call #%s (channel %r)",
                  unique_id, call_id, h['Channel'])
-        call._bind_to_channel(unique_id)
+        call._unique_ids.add(unique_id)
         self._unique_ids[unique_id] = call
 
     def on_local_bridge(self, event):

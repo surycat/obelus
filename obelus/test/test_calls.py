@@ -34,12 +34,21 @@ UNIQUE_ID = '1378719573.625'
 CHANNEL = 'Local/6004@default-00000118;1'
 UNIQUE_ID_2 = '1378719573.626'
 CHANNEL_2 = 'Local/6004@default-00000118;2'
+UNIQUE_ID_OTHER = '1378719573.631'
+UNIQUE_ID_OTHER_2 = '1378719573.632'
 
 LOCAL_BRIDGE = Event('LocalBridge',
                      {'Uniqueid2': UNIQUE_ID_2,
                       'Uniqueid1': UNIQUE_ID,
-                      'Channel2': 'Local/6004@default-00000118;2',
-                      'Channel1': CHANNEL_2,
+                      'Channel2': CHANNEL_2,
+                      'Channel1': CHANNEL,
+                      'Context': 'default'})
+
+LOCAL_BRIDGE_OTHER = Event('LocalBridge',
+                     {'Uniqueid2': UNIQUE_ID_OTHER_2,
+                      'Uniqueid1': UNIQUE_ID_OTHER,
+                      'Channel2': 'Local/6004@default-00000119;2',
+                      'Channel1': 'Local/6004@default-00000119;1',
                       'Context': 'default'})
 
 DIAL_START = Event('Dial',
@@ -54,6 +63,13 @@ DIAL_END = Event('Dial',
                   'UniqueID': UNIQUE_ID_2,
                   'Channel': CHANNEL_2,
                   'DialStatus': 'BUSY'})
+
+DIAL_OTHER = Event('Dial',
+                   {'DestUniqueID': '1378719683.629',
+                    'SubEvent': 'Begin',
+                    'UniqueID': UNIQUE_ID_OTHER,
+                    'Channel': CHANNEL_2,
+                    'Dialstring': '0sxqaw'})
 
 NEWSTATE_1_OTHER = Event('Newstate',
                          {'ChannelState': '5',
@@ -174,6 +190,15 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         self.assertEqual(cm.tracked_calls(), set())
         self.assertEqual(call.event_calls, [])
 
+    def test_originate_call_reuse(self):
+        cm = self.call_manager()
+        call = self.call()
+        sa = cm.ami.send_action = Mock()
+        cm.originate(call, {"Foo": "Bar"})
+        with self.assertRaises(ValueError):
+            cm.originate(call, {"Foo": "Quux"})
+        self.assertEqual(sa.call_count, 1)
+
     def test_sync_originate_failure(self):
         # Synchronous failure: the originate action's response is a failure
         cm = self.call_manager()
@@ -186,6 +211,31 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm.ami.response_received(resp)
         self.assertEqual(call.event_calls, ['call_failed'])
         self.assert_called_once_with_exc(call.call_failed, ActionError)
+
+    def test_call_originated_unique_ids(self):
+        cm = self.call_manager()
+        call = self.call()
+        cm.ami._action_id = 1
+        cm.ami.write = Mock()
+        self.assertRaises(ValueError, call.unique_ids)
+        cm.originate(call, {"Foo": "Bar"})
+        self.assertEqual(call.unique_ids(), [])
+
+    def test_call_queued_unique_ids(self):
+        cm, call = self.queued_call()
+        self.assertEqual(call.unique_ids(), [])
+
+    def test_call_tracked_unique_ids(self):
+        cm, call = self.tracked_call()
+        self.assertEqual(call.unique_ids(), [UNIQUE_ID])
+
+    def test_local_bridges(self):
+        cm, call = self.tracked_call()
+        self.assertEqual(call.unique_ids(), [UNIQUE_ID])
+        cm.ami.event_received(LOCAL_BRIDGE_OTHER)
+        self.assertEqual(call.unique_ids(), [UNIQUE_ID])
+        cm.ami.event_received(LOCAL_BRIDGE)
+        self.assertEqual(call.unique_ids(), [UNIQUE_ID, UNIQUE_ID_2])
 
     def test_call_queued(self):
         cm, call = self.queued_call()
@@ -216,6 +266,14 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
                        'ChannelState': '0',
                        'Channel': CHANNEL,
                        'ChannelStateDesc': 'Down'})
+        cm.ami.event_received(event)
+        self.assertEqual(cm.tracked_calls(), set())
+        # Not the right variable name => ignored
+        event = Event('VarSet',
+                      {'Variable': 'SOMETHING',
+                       'Value': '1',
+                       'Channel': CHANNEL,
+                       'Uniqueid': UNIQUE_ID})
         cm.ami.event_received(event)
         self.assertEqual(cm.tracked_calls(), set())
         # Not the right variable value => ignored too
@@ -277,6 +335,12 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         self.assertEqual(call.event_calls, ['call_queued', 'dialing_started',
                                             'dialing_finished'])
         call.dialing_finished.assert_called_once_with('BUSY')
+
+    def test_dial_other(self):
+        cm, call = self.tracked_call()
+        cm.ami.event_received(LOCAL_BRIDGE)
+        cm.ami.event_received(DIAL_OTHER)
+        self.assertEqual(call.event_calls, ['call_queued'])
 
     def test_state_events(self):
         cm, call = self.tracked_call()
