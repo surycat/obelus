@@ -1,5 +1,9 @@
-include README.rst
-include docs/*.rst
+include LICENSE.txt
+include coverage.conf
+include tox.ini
+global-include *.rst
 include docs/conf.py
 include docs/make.bat
 include docs/Makefile
+prune .tox
+prune .hg
