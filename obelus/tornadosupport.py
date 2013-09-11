@@ -5,8 +5,8 @@ class TornadoAdapter(object):
     Tornado adapter for Obelus protocols (e.g. AMIProtocol, AGIProtocol).
 
     Pass a *protocol* instance to create the adapter, then call
-    :meth:`bind_stream()` when you need to wire the protocol to a Tornado
-    IOStream.
+    :meth:`bind_stream` when you need to wire the protocol to a Tornado
+    :class:`~tornado.iostream.IOStream` instance.
     """
 
     stream = None
