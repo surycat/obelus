@@ -12,9 +12,7 @@ class Handler(object):
     _result_cb = None
     _exception_cb = None
 
-    _cancelled = False
     _triggered = False
-    _canceller = None
 
     @property
     def on_result(self):
@@ -50,19 +48,7 @@ class Handler(object):
                             % type(cb))
         self._exception_cb = cb
 
-    def cancel(self):
-        """
-        Cancel this handler.
-        TODO clarify semantics -- is this useful?
-        """
-        self._cancelled = True
-        if self._canceller is not None:
-            self._canceller(self)
-            self._canceller = None
-
     def set_result(self, result):
-        if self._cancelled:
-            return
         if self._triggered:
             raise RuntimeError("Cannot trigger handler a second time")
         self._triggered = True
@@ -70,8 +56,6 @@ class Handler(object):
             self._result_cb(result)
 
     def set_exception(self, exc):
-        if self._cancelled:
-            return
         if self._triggered:
             raise RuntimeError("Cannot trigger handler a second time")
         self._triggered = True

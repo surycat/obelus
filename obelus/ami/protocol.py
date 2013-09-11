@@ -236,19 +236,6 @@ class AMIProtocol(BaseAMIProtocol):
         self._actions[action_id] = handler
         return handler
 
-    def _cancel_action(self, handler):
-        action_id = handler._action_id
-        try:
-            current_handler = self._actions.pop(action_id)
-        except KeyError:
-            # For convenience, we allow "cancelling" an action which
-            # has finished receiving results, or was already cancelled.
-            pass
-        else:
-            if current_handler is not handler:
-                self._actions[action_id] = current_handler
-                raise RuntimeError("Cannot cancel stale action handler")
-
     def register_event_handler(self, name, func):
         """
         Register a callable event handler *func* for the event *name*.
