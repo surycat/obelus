@@ -30,6 +30,10 @@ class AsyncAGIExecutor(object):
     """
     AsyncAGIExecutor dispatches between a single AMI protocol instance
     and an arbitrary number of AGI channels and protocols.
+
+    *protocol_factory* should be a callable returning a AGIProtocol
+    instance.  It will be called each time a new Async AGI channel is
+    started by Asterisk through the AMI.
     """
 
     logger = logging.getLogger(__name__)

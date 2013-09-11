@@ -7,4 +7,4 @@ syntax: glob
 build/
 dist/
 htmlcov/
-
+docs/_build
