@@ -1,8 +1,9 @@
 
 from distutils.core import setup
-import sys
 
-version = "0.1.dev"
+import obelus
+
+version = obelus.__version__
 
 with open('README.rst') as f:
     long_description = f.read()
