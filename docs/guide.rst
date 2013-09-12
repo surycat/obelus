@@ -38,6 +38,20 @@ was made:
   encoding is implied by default, but this can be changed.  Encoding
   and decoding is handled by the protocols.
 
+
+Futures, promises... handlers
+"""""""""""""""""""""""""""""
+
+Non-blocking network programming usually revolves around passing and
+invoking callbacks.  To abstract that notion, Obelus defines a
+:class:`~obelus.common.Handler` class.  When a library function performing
+an operation returns a handler, you can set its
+:attr:`~obelus.common.Handler.on_result` and
+:attr:`~obelus.common.Handler.on_exception` attributes to functions which
+will be called with the successful or exceptional result of the operation,
+respectively.
+
+
 Protocols and transports
 """"""""""""""""""""""""
 
@@ -89,6 +103,7 @@ Here are the methods which should be implemented by a transport
    "Bidirectional Stream Transports" and "Stream Protocols"
    in :pep:`3156`.
 
+
 Writing an adapter
 """"""""""""""""""
 
@@ -124,6 +139,14 @@ method.  To listen to specific events, call the
 .. seealso::
    Unofficial `Asterisk manager API <http://www.voip-info.org/wiki/view/Asterisk+manager+API>`_
    documentation at voip-info.org.
+
+
+Making calls
+""""""""""""
+
+The :class:`obelus.ami.CallManager` class helps you originate calls
+using an :class:`~obelus.ami.AMIProtocol` instance and track their status
+changes.
 
 
 Asterisk Gateway Interface
