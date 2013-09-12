@@ -3,6 +3,7 @@ include coverage.conf
 include tox.ini
 global-include *.rst
 include docs/*.txt
+include docs/*.png
 include docs/conf.py
 include docs/make.bat
 include docs/Makefile

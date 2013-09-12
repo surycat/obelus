@@ -16,6 +16,7 @@ docs/apidocs.rst
 docs/conf.py
 docs/guide.rst
 docs/index.rst
+docs/logo.png
 docs/make.bat
 docs/requirements.txt
 obelus/__init__.py
