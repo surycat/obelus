@@ -1,6 +1,7 @@
 include LICENSE.txt
 include coverage.conf
 include tox.ini
+include run_coverage.py
 global-include *.rst
 include docs/*.txt
 include docs/*.png

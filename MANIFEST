@@ -2,6 +2,7 @@
 LICENSE.txt
 README.rst
 coverage.conf
+run_coverage.py
 setup.py
 tox.ini
 docs/Makefile
