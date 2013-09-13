@@ -53,6 +53,12 @@ Optional requirements
 * `Tornado`_, `Twisted`_ or `Tulip`_, if you want to use one of the
   corresponding adapters.
 
+Reporting issues
+----------------
+
+If you have a bug to report or an improvement to suggest, please open
+an issue on the `issue tracker <https://bitbucket.org/optiflowsrd/obelus/issues>`_.
+
 
 Documentation
 """""""""""""

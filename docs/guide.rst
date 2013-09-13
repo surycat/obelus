@@ -104,6 +104,8 @@ Here are the methods which should be implemented by a transport
    in :pep:`3156`.
 
 
+.. _adapters:
+
 Writing an adapter
 """"""""""""""""""
 
