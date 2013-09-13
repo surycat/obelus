@@ -2,11 +2,12 @@
 Obelus: Asterisk's best friend
 ==============================
 
+.. overview-start
+
 Obelus is a MIT-licensed Python library providing support for communication
 with the `Asterisk <http://www.asterisk.org/>`_ telephony server.  It
 supports the `Asterisk Manager Interface (AMI) <http://asteriskdocs.org/en/3rd_Edition/asterisk-book-html-chunk/asterisk-AMI.html>`_
 and the `Asterisk Gateway Interface (AGI) <http://asteriskdocs.org/en/3rd_Edition/asterisk-book-html-chunk/AGI.html>`_.
-
 
 Quick links
 -----------
@@ -15,7 +16,6 @@ Quick links
 * Source code, issue tracker: https://bitbucket.org/optiflowsrd/obelus
 * Documentation (incomplete): https://obelus.readthedocs.org
 
-
 Features
 --------
 
@@ -23,11 +23,11 @@ Features
 * AMI, FastAGI and Async AGI support.
 * Event-driven API friendly towards non-blocking ("async") network
   programming styles.
+* :pep:`3156`-style protocol implementations.
 * Framework-agnostic.
 * Adapters for the `Tornado`_, `Twisted`_, `Tulip`_ network programming
   frameworks.
 * Unit-tested.
-
 
 Limitations
 -----------
@@ -35,7 +35,6 @@ Limitations
 * The API is currently low-level: it abstracts away protocol syntax and
   communication sequences, but doesn't try to expose Asterisk concepts
   in a particular way.
-
 
 Requirements
 ------------
@@ -47,6 +46,12 @@ Optional requirements
 
 * `Tornado`_, `Twisted`_ or `Tulip`_, if you want to use one of the
   corresponding adapters.
+
+.. _Tornado: http://www.tornadoweb.org/
+.. _Tulip: http://code.google.com/p/tulip/
+.. _Twisted: http://www.twistedmatrix.com/
+
+.. overview-end
 
 
 Examples
