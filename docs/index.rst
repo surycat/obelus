@@ -59,6 +59,7 @@ Documentation
 
 .. toctree::
    guide
+   developers
    apidocs
 
 .. _Tornado: http://www.tornadoweb.org/

@@ -252,4 +252,7 @@ texinfo_documents = [
 
 # -- Options for various extensions --------------------------------------
 
-intersphinx_mapping = {'tornado': ('http://www.tornadoweb.org/en/stable/', None)}
+intersphinx_mapping = {
+    'tornado': ('http://www.tornadoweb.org/en/stable/', None),
+    'py': ('http://docs.python.org/dev/', None),
+    }

@@ -15,6 +15,7 @@ docs/api_tornadoadapter.rst
 docs/api_twistedadapter.rst
 docs/apidocs.rst
 docs/conf.py
+docs/developers.rst
 docs/guide.rst
 docs/index.rst
 docs/logo.png
