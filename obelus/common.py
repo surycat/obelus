@@ -14,8 +14,10 @@ class Handler(object):
     notified of the output of the operation.
     """
 
+    _unset = object()
     _result_cb = None
     _exception_cb = None
+    _outcome = _unset
 
     _triggered = False
 
@@ -34,6 +36,9 @@ class Handler(object):
         if not callable(cb):
             raise TypeError("on_result should be callable, got %r"
                             % type(cb))
+        if self._triggered:
+            raise NotImplementedError(
+                "callbacks can't be set after Handler was triggered")
         self._result_cb = cb
 
     @property
@@ -51,11 +56,17 @@ class Handler(object):
         if not callable(cb):
             raise TypeError("on_exception should be callable, got %r"
                             % type(cb))
+        if self._triggered:
+            raise NotImplementedError(
+                "callbacks can't be set after Handler was triggered")
         self._exception_cb = cb
 
     def set_result(self, result):
         if self._triggered:
             raise RuntimeError("Cannot trigger handler a second time")
+        if isinstance(result, BaseException):
+            raise TypeError("Cannot set an exception with set_result(), "
+                            "please use set_exception()")
         self._triggered = True
         if self._result_cb is not None:
             self._result_cb(result)
@@ -63,6 +74,8 @@ class Handler(object):
     def set_exception(self, exc):
         if self._triggered:
             raise RuntimeError("Cannot trigger handler a second time")
+        if not isinstance(exc, BaseException):
+            raise TypeError("Exception instance expected")
         self._triggered = True
         if self._exception_cb is None:
             raise exc

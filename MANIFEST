@@ -48,4 +48,5 @@ obelus/test/test_amiprotocol.py
 obelus/test/test_asyncagi.py
 obelus/test/test_calls.py
 obelus/test/test_casedict.py
+obelus/test/test_handler.py
 obelus/test/test_linereceiver.py
