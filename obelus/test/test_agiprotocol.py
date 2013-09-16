@@ -10,7 +10,7 @@ from obelus.agi.protocol import (
     AGIProtocol, ProtocolAGIChannel, Response,
     AGICommandFailure, AGIUnknownCommand, AGIForbiddenCommand, AGISyntaxError)
 from obelus.common import Handler
-from obelus.test import main, watch_logging
+from . import main, watch_logging
 
 
 def literal_message(text):

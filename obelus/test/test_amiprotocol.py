@@ -8,7 +8,7 @@ from mock import Mock, ANY
 from obelus.ami.protocol import (
     BaseAMIProtocol, AMIProtocol, Event, Response, EventList, ActionError)
 from obelus.common import Handler
-from obelus.test import main
+from . import main
 
 
 def literal_message(text):

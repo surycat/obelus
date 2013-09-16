@@ -2,7 +2,7 @@
 import unittest
 
 from obelus.common import LineReceiver
-from obelus.test import main
+from . import main
 
 
 class MockLineReceiver(LineReceiver):

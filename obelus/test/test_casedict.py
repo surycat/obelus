@@ -2,7 +2,7 @@
 import unittest
 
 from obelus.casedict import CaseDict
-from obelus.test import main
+from . import main
 
 
 class CaseDictTest(unittest.TestCase):

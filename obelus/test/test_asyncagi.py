@@ -13,7 +13,7 @@ from obelus.agi.protocol import (
 from obelus.agi.session import AGISession
 from obelus.ami.protocol import AMIProtocol, ActionError
 from obelus.common import Handler
-from obelus.test import main, watch_logging
+from . import main, watch_logging
 
 
 def literal_ami(text):

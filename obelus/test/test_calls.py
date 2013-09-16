@@ -8,8 +8,8 @@ from mock import Mock, ANY
 from obelus.ami.calls import Call, CallManager, OriginateError
 from obelus.ami.protocol import (
     BaseAMIProtocol, AMIProtocol, Event, Response, EventList, ActionError)
-from obelus.test import main, watch_logging
-from obelus.test.test_amiprotocol import ProtocolTestBase
+from . import main, watch_logging
+from .test_amiprotocol import ProtocolTestBase
 
 
 class MockCall(Call):
