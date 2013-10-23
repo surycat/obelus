@@ -7,7 +7,7 @@ Philosophy
 
 Obelus, as a network programming library, doesn't want to be tied to
 a particular framework.  Some people want to use `Twisted`_, others
-`Tornado`_, others `Tulip`_.  The solution is to provide APIs that
+`Tornado`_, others `asyncio`_.  The solution is to provide APIs that
 are framework-agnostic.  Everyone can then write their own adapters,
 though Obelus provides a couple of them
 (:class:`~obelus.tornadosupport.TornadoAdapter`,
@@ -17,7 +17,7 @@ Still, to avoid inventing yet another API, it was decided to settle
 on :pep:`3156`-like protocols.
 
 .. note::
-   `Tulip`_ doesn't need any adapter: Obelus protocols can be used
+   `asyncio`_ doesn't need any adapter: Obelus protocols can be used
    directly.
 
 
@@ -185,6 +185,6 @@ Obelus provides support for FastAGI and Async AGI (using
 :class:`~obelus.agi.AsyncAGIExecutor`).
 
 
+.. _asyncio: https://pypi.python.org/pypi/asyncio/
 .. _Tornado: http://www.tornadoweb.org/
-.. _Tulip: http://code.google.com/p/tulip/
 .. _Twisted: http://www.twistedmatrix.com/

@@ -1,15 +1,18 @@
 """
-Adapter for the Tulip network programming framework.
+Adapter for the asyncio network programming framework.
 """
 
 try:
-    import tulip
+    import asyncio
 except ImportError:
-    tulip = None
+    try:
+        import tulip as asyncio
+    except ImportError:
+        asyncio = None
 
-if not tulip:
-    raise ImportError("tulip is required for this module to work: "
-                      "http://code.google.com/p/tulip/")
+if not asyncio:
+    raise ImportError("asyncio is required for this module to work: "
+                      "https://pypi.python.org/pypi/asyncio")
 
 
 if __name__ == "__main__":
@@ -19,18 +22,18 @@ if __name__ == "__main__":
     from . import examplecli
 
     parser = examplecli.create_parser(
-        description="Tulip-based AMI client example")
+        description="asyncio-based AMI client example")
 
     options, args = examplecli.parse_args(parser)
 
-    # Tulip's logger is very chatty, dampen it
-    logging.getLogger('tulip').setLevel('WARNING')
+    # asyncio's logger is very chatty, dampen it
+    logging.getLogger(asyncio.__name__).setLevel('WARNING')
     log = logging.getLogger(__name__)
 
-    loop = tulip.get_event_loop()
+    loop = asyncio.get_event_loop()
     proto = examplecli.CLIProtocol(loop, options)
-    fut = tulip.async(loop.create_connection(lambda: proto,
-                                             options.host, options.port))
+    fut = asyncio.async(loop.create_connection(lambda: proto,
+                                               options.host, options.port))
     def cb(fut):
         exc = fut.exception()
         if exc is not None:
