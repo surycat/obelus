@@ -484,6 +484,19 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         self.assertEqual(call.event_calls, ['call_state_changed', 'call_ended'])
         call.call_ended.assert_called_once_with(0, 'Unknown')
 
+    def test_incoming_sip_call_no_factory(self):
+        # Incoming calls are ignored if no factory is registered
+        cm = self.call_manager()
+        cm.ami.event_received(NEWCHANNEL_INCOMING)
+        cm.ami.event_received(NEWSTATE_INCOMING)
+        self.assertEqual(cm.queued_calls(), set())
+        self.assertEqual(cm.tracked_calls(), set())
+
+    def test_incoming_call_factory_type_error(self):
+        cm = self.call_manager()
+        with self.assertRaises(TypeError):
+            cm.listen_for_incoming_calls(object())
+
 
 if __name__ == "__main__":
     main()
