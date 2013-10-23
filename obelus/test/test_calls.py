@@ -36,6 +36,8 @@ UNIQUE_ID_2 = '1378719573.626'
 CHANNEL_2 = 'Local/6004@default-00000118;2'
 UNIQUE_ID_OTHER = '1378719573.631'
 UNIQUE_ID_OTHER_2 = '1378719573.632'
+UNIQUE_ID_INCOMING = '1382364953.8'
+CHANNEL_INCOMING = 'SIP/surycat-00000008'
 
 LOCAL_BRIDGE = Event('LocalBridge',
                      {'Uniqueid2': UNIQUE_ID_2,
@@ -71,6 +73,42 @@ DIAL_OTHER = Event('Dial',
                     'Channel': CHANNEL_2,
                     'Dialstring': '0sxqaw'})
 
+NEWCHANNEL_1 = Event('Newchannel',
+                     {'AccountCode': '',
+                      'Uniqueid': UNIQUE_ID,
+                      'Channel': CHANNEL,
+                      'Exten': '6004',
+                      'Context': 'default',
+                      'CallerIDNum': '',
+                      'CallerIDName': '',
+                      'Privilege': 'call,all',
+                      'ChannelState': '0',
+                      'ChannelStateDesc': 'Down'})
+
+NEWCHANNEL_2 = Event('Newchannel',
+                     {'AccountCode': '',
+                      'Uniqueid': UNIQUE_ID_2,
+                      'Channel': CHANNEL_2,
+                      'Exten': '6004',
+                      'Context': 'default',
+                      'CallerIDNum': '',
+                      'CallerIDName': '',
+                      'Privilege': 'call,all',
+                      'ChannelState': '4',
+                      'ChannelStateDesc': 'Ring'})
+
+NEWCHANNEL_INCOMING = Event('Newchannel',
+                            {'Privilege': 'call,all',
+                             'Uniqueid': UNIQUE_ID_INCOMING,
+                             'Channel': CHANNEL_INCOMING,
+                             'ChannelState': '0',
+                             'ChannelStateDesc': 'Down',
+                             'CallerIDNum': '202',
+                             'CallerIDName': 'User PTI1',
+                             'AccountCode': '',
+                             'Exten': '444',
+                             'Context': 'inbound-call'})
+
 NEWSTATE_1_OTHER = Event('Newstate',
                          {'ChannelState': '5',
                           'Uniqueid': '1378719683.629',
@@ -89,6 +127,16 @@ NEWSTATE_2 = Event('Newstate',
                     'Channel': CHANNEL_2,
                     'ChannelStateDesc': 'Up'})
 
+NEWSTATE_INCOMING = Event('Newstate',
+                          {'ChannelState': '4',
+                           'ChannelStateDesc': 'Ring',
+                           'Uniqueid': UNIQUE_ID_INCOMING,
+                           'Channel': CHANNEL_INCOMING,
+                           'CallerIDNum': '202',
+                           'CallerIDName': 'User PTI1',
+                           'ConnectedLineNum': '',
+                           'ConnectedLineName': ''})
+
 HANGUP_REJECTED_1 = Event('Hangup',
                           {'Cause-txt': 'Call Rejected',
                            'Uniqueid': UNIQUE_ID_2,
@@ -100,6 +148,16 @@ HANGUP_REJECTED_2 = Event('Hangup',
                            'Uniqueid': UNIQUE_ID,
                            'Cause': '21',
                            'Channel': CHANNEL})
+
+HANGUP_INCOMING = Event('Hangup',
+                        {'Channel': CHANNEL_INCOMING,
+                         'Uniqueid': UNIQUE_ID_INCOMING,
+                         'CallerIDNum': '202',
+                         'CallerIDName': 'User PTI1',
+                         'ConnectedLineNum': '<unknown>',
+                         'ConnectedLineName': '<unknown>',
+                         'Cause': '0',
+                         'Cause-txt': 'Unknown'})
 
 
 class CallManagerTest(ProtocolTestBase, unittest.TestCase):
@@ -127,6 +185,8 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
 
     def tracked_call(self):
         cm, call = self.queued_call()
+        cm.ami.event_received(NEWCHANNEL_1)
+        cm.ami.event_received(NEWCHANNEL_2)
         event = Event('VarSet',
                       {'Variable': 'X_TRACK',
                        'Value': '1',
@@ -241,6 +301,11 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm, call = self.queued_call()
         self.assertEqual(call.event_calls, ['call_queued'])
         call.call_queued.assert_called_once_with()
+        self.assertEqual(cm.queued_calls(), {call})
+        self.assertEqual(cm.tracked_calls(), set())
+        # Newchannel events for the call are ignored
+        cm.ami.event_received(NEWCHANNEL_1)
+        cm.ami.event_received(NEWCHANNEL_2)
         self.assertEqual(cm.queued_calls(), {call})
         self.assertEqual(cm.tracked_calls(), set())
 
@@ -379,6 +444,45 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm.ami.event_received(HANGUP_REJECTED_1)
         self.assertEqual(call.event_calls, ['call_queued', 'call_ended'])
         call.call_ended.assert_called_once_with(21, 'Call Rejected')
+
+    #
+    # Tracking of incoming calls
+    #
+
+    def incoming_call(self, cm, newchannel, newstate):
+        def factory(*args):
+            factory.result = MockCall()
+            return factory.result
+        factory = Mock(side_effect=factory)
+        cm.listen_for_incoming_calls(factory)
+        cm.ami.event_received(newchannel)
+        self.assertEqual(factory.call_count, 0)
+        cm.ami.event_received(newstate)
+        factory.assert_called_once_with(newchannel.headers)
+        return factory.result
+
+    def test_incoming_local_call(self):
+        # Local calls are not considered
+        cm = self.call_manager()
+        factory = Mock()
+        cm.listen_for_incoming_calls(factory)
+        cm.ami.event_received(NEWCHANNEL_1)
+        cm.ami.event_received(NEWSTATE_1)
+        self.assertEqual(factory.call_count, 0)
+        self.assertEqual(cm.queued_calls(), set())
+        self.assertEqual(cm.tracked_calls(), set())
+
+    def test_incoming_sip_call(self):
+        # Non-local calls are considered incoming when newstate is received
+        cm = self.call_manager()
+        call = self.incoming_call(cm, NEWCHANNEL_INCOMING, NEWSTATE_INCOMING)
+        self.assertEqual(cm.queued_calls(), set())
+        self.assertEqual(cm.tracked_calls(), {call})
+        self.assertEqual(call.event_calls, ['call_state_changed'])
+        call.call_state_changed.assert_called_once_with(4, 'Ring')
+        cm.ami.event_received(HANGUP_INCOMING)
+        self.assertEqual(call.event_calls, ['call_state_changed', 'call_ended'])
+        call.call_ended.assert_called_once_with(0, 'Unknown')
 
 
 if __name__ == "__main__":

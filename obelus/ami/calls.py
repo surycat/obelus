@@ -33,12 +33,13 @@ class Call(object):
     _action_id = None
     manager = None
 
-    def _bind(self, manager, call_id):
+    def _bind(self, manager, call_id, outgoing):
         self.manager = manager
         self._call_id = call_id
         self._state = None
         self._state_desc = None
         self._unique_ids = set()
+        self._outgoing = outgoing
 
     def __str__(self):
         try:
@@ -115,6 +116,9 @@ class CallManager(object):
         self._tracking_variable = (
             'X_' + hashlib.sha1(os.urandom(32)).hexdigest().upper()[:12])
         self._call_id = 1
+        self._incoming_call_factory = None
+        # channel unique id => newchannel event headers
+        self._new_channels = {}
         # action id => call (queued but untracked calls)
         self._actions = {}
         # call id => call (all queued calls)
@@ -130,22 +134,34 @@ class CallManager(object):
 
     def queued_calls(self):
         """
-        Return a set of all queued calls.
+        Return a set of all queued (outgoing) calls.
         """
-        return set(self._calls.values())
+        return {call for call in self._calls.values() if call._outgoing}
 
     def tracked_calls(self):
         """
-        Return a set of currently tracked calls (i.e. queued *and*
-        successfully originated).  This is a subset of queued_calls().
+        Return a set of currently tracked calls (both incoming and
+        originated).  Note: some queued calls may be untracked yet.
         """
         return set(self._calls.values()) - set(self._actions.values())
+
+    def listen_for_incoming_calls(self, call_factory):
+        """
+        When an incoming call is detected, call the given *call_factory*.
+        The *call_factory* will be called with the headers of the
+        "Newchannel" event for the call, and must return a Call instance
+        (possibly a subclass).
+        """
+        if not callable(call_factory):
+            raise TypeError("call factory should be callable")
+        self._incoming_call_factory = call_factory
 
     def setup_event_handlers(self):
         """
         Setup the AMI event handlers required for call tracking.
         This is implicitly called on __init__().
         """
+        self.ami.register_event_handler('Newchannel', self.on_new_channel)
         self.ami.register_event_handler('VarSet', self.on_var_set)
         self.ami.register_event_handler('LocalBridge', self.on_local_bridge)
         self.ami.register_event_handler('Dial', self.on_dial)
@@ -194,7 +210,7 @@ class CallManager(object):
         variables = variables or {}
         variables[self._tracking_variable] = call_id
         a = self.ami.send_action('Originate', headers, variables)
-        call._bind(self, call_id)
+        call._bind(self, call_id, outgoing=True)
         def _call_queued(resp):
             action_id = resp.headers['ActionID']
             call._action_id = action_id
@@ -207,6 +223,10 @@ class CallManager(object):
         a.on_exception = _call_failed
 
     def on_originate_response(self, event):
+        """
+        On an OriginateResponse event, mark the associated call failed
+        or queued.
+        """
         h = event.headers
         if h['Response'] != 'Failure':
             return
@@ -216,12 +236,43 @@ class CallManager(object):
             del self._calls[call._call_id]
             call.call_failed(OriginateError(h['Reason']))
 
+    def _candidate_incoming_call(self, unique_id):
+        newchannel = self._new_channels.pop(unique_id, None)
+        if (newchannel is not None
+            and self._incoming_call_factory is not None):
+            call = self._incoming_call_factory(newchannel)
+            call_id = self._new_call_id()
+            call._bind(self, call_id, outgoing=False)
+            self._calls[call_id] = call
+            call._unique_ids.add(unique_id)
+            self._unique_ids[unique_id] = call
+            return call
+
+    def on_new_channel(self, event):
+        """
+        On a Newchannel event, register the channel as a candidate
+        incoming call.
+        """
+        h = event.headers
+        unique_id = h['Uniqueid']
+        if h['Channel'].startswith('Local/'):
+            log.debug("Newchannel: local channel %r, ignoring", h['Channel'])
+            return
+        self._new_channels[unique_id] = h
+
     def on_var_set(self, event):
+        """
+        On a VarSet event, check if the variable is our tracking variable
+        and associate the channel with a call by us.
+        """
         h = event.headers
         if h['Variable'] != self._tracking_variable:
             return
         call_id = h['Value']
         unique_id = h['Uniqueid']
+        # The channel belongs to an outgoing call, remove it from the
+        # candidate incoming calls.
+        self._new_channels.pop(unique_id, None)
         try:
             call = self._calls[call_id]
         except KeyError:
@@ -238,6 +289,10 @@ class CallManager(object):
         self._unique_ids[unique_id] = call
 
     def on_local_bridge(self, event):
+        """
+        On a LocalBridge event, recognize that the two channels belongs
+        to the same call.
+        """
         h = event.headers
         id1 = h['Uniqueid1']
         call = self._unique_ids.get(id1)
@@ -256,8 +311,13 @@ class CallManager(object):
         self._unique_ids[id2] = call
 
     def on_hangup(self, event):
+        """
+        On a Hangup event, recognize that the channel is dead, and that
+        the associated call has ended if it has no more channels.
+        """
         h = event.headers
         unique_id = h['Uniqueid']
+        self._new_channels.pop(unique_id, None)
         call = self._unique_ids.pop(unique_id, None)
         if call is None:
             log.debug("Hangup: unknown UniqueID %r, ignoring", unique_id)
@@ -268,6 +328,9 @@ class CallManager(object):
             call.call_ended(int(h['Cause'], 10), h.get('Cause-txt', ''))
 
     def on_dial(self, event):
+        """
+        On a Dial event, update the call state.
+        """
         h = event.headers
         unique_id = h['UniqueID']  # casing!
         call = self._unique_ids.get(unique_id)
@@ -282,12 +345,17 @@ class CallManager(object):
             call.dialing_finished(status)
 
     def on_new_state(self, event):
+        """
+        On a Newstate event, update the call state.
+        """
         h = event.headers
         unique_id = h['Uniqueid']
         call = self._unique_ids.get(unique_id)
         if call is None:
-            log.debug("Newstate: unknown UniqueID %r, ignoring", unique_id)
-            return
+            call = self._candidate_incoming_call(unique_id)
+            if call is None:
+                log.debug("Newstate: unknown UniqueID %r, ignoring", unique_id)
+                return
         state = int(h['ChannelState'])
         state_desc = h['ChannelStateDesc']
         if state != call._state:
