@@ -149,6 +149,16 @@ HANGUP_REJECTED_2 = Event('Hangup',
                            'Cause': '21',
                            'Channel': CHANNEL})
 
+SOFT_HANGUP_INCOMING_1 = Event('SoftHangupRequest',
+                               {'Channel': CHANNEL_INCOMING,
+                                'Uniqueid': UNIQUE_ID_INCOMING,
+                                'Cause': '32'})
+
+SOFT_HANGUP_INCOMING_2 = Event('SoftHangupRequest',
+                               {'Channel': CHANNEL_INCOMING,
+                                'Uniqueid': UNIQUE_ID_INCOMING,
+                                'Cause': '16'})
+
 HANGUP_INCOMING = Event('Hangup',
                         {'Channel': CHANNEL_INCOMING,
                          'Uniqueid': UNIQUE_ID_INCOMING,
@@ -483,6 +493,22 @@ class CallManagerTest(ProtocolTestBase, unittest.TestCase):
         cm.ami.event_received(HANGUP_INCOMING)
         self.assertEqual(call.event_calls, ['call_state_changed', 'call_ended'])
         call.call_ended.assert_called_once_with(0, 'Unknown')
+
+    def test_incoming_sip_call_hangup_cause(self):
+        # The cause passed to "call_ended" corresponds to the last non-zero
+        # cause of either Hangup or SoftHangupRequest events.
+        cm = self.call_manager()
+        call = self.incoming_call(cm, NEWCHANNEL_INCOMING, NEWSTATE_INCOMING)
+        self.assertEqual(cm.queued_calls(), set())
+        self.assertEqual(cm.tracked_calls(), {call})
+        self.assertEqual(call.event_calls, ['call_state_changed'])
+        call.call_state_changed.assert_called_once_with(4, 'Ring')
+        cm.ami.event_received(SOFT_HANGUP_INCOMING_1)
+        cm.ami.event_received(SOFT_HANGUP_INCOMING_2)
+        self.assertEqual(call.event_calls, ['call_state_changed'])
+        cm.ami.event_received(HANGUP_INCOMING)
+        self.assertEqual(call.event_calls, ['call_state_changed', 'call_ended'])
+        call.call_ended.assert_called_once_with(16, '')
 
     def test_incoming_sip_call_no_factory(self):
         # Incoming calls are ignored if no factory is registered

@@ -40,6 +40,7 @@ class Call(object):
         self._state_desc = None
         self._unique_ids = set()
         self._outgoing = outgoing
+        self._last_hangup_cause = None
 
     def __str__(self):
         try:
@@ -96,6 +97,9 @@ class Call(object):
         Called when the call ends.  *cause* is the numeric cause
         sent by Asterisk, *cause_desc* its textual description.
         """
+        # NOTE: the cause codes are mostly Q850, and enumerated in
+        # <asterisk>/include/asterisk/causes.h.
+        # The textual descriptions are in <asterisk>/main/channel.c.
 
 
 class CallManager(object):
@@ -166,6 +170,7 @@ class CallManager(object):
         self.ami.register_event_handler('LocalBridge', self.on_local_bridge)
         self.ami.register_event_handler('Dial', self.on_dial)
         self.ami.register_event_handler('Newstate', self.on_new_state)
+        self.ami.register_event_handler('SoftHangupRequest', self.on_soft_hangup_request)
         self.ami.register_event_handler('Hangup', self.on_hangup)
         # Yes, there's an event called "OriginateResponse"
         self.ami.register_event_handler('OriginateResponse', self.on_originate_response)
@@ -310,6 +315,25 @@ class CallManager(object):
         call._unique_ids.add(id2)
         self._unique_ids[id2] = call
 
+    def _update_hangup_cause(self, call, headers):
+        cause = int(headers.get('Cause', '0'), 10)
+        if cause or not call._last_hangup_cause:
+            call._last_hangup_cause = (cause, headers.get('Cause-txt', ''))
+
+    def on_soft_hangup_request(self, event):
+        """
+        On a SoftHangupRequest event, update the call's hangup cause
+        if desirable.
+        """
+        h = event.headers
+        unique_id = h['Uniqueid']
+        call = self._unique_ids.get(unique_id)
+        if call is None:
+            log.debug("SoftHangupRequest: unknown UniqueID %r, ignoring",
+                      unique_id)
+            return
+        self._update_hangup_cause(call, h)
+
     def on_hangup(self, event):
         """
         On a Hangup event, recognize that the channel is dead, and that
@@ -323,9 +347,10 @@ class CallManager(object):
             log.debug("Hangup: unknown UniqueID %r, ignoring", unique_id)
             return
         call._unique_ids.remove(unique_id)
+        self._update_hangup_cause(call, h)
         if not call._unique_ids:
             del self._calls[call._call_id]
-            call.call_ended(int(h['Cause'], 10), h.get('Cause-txt', ''))
+            call.call_ended(*call._last_hangup_cause)
 
     def on_dial(self, event):
         """
