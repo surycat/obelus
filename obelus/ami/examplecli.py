@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 
+from .calls import Call, CallManager
 from .protocol import AMIProtocol
 
 log = logging.getLogger(__name__)
@@ -9,6 +10,15 @@ log = logging.getLogger(__name__)
 
 class CLIOptions(object):
     pass
+
+
+class CLICall(Call):
+
+    def call_state_changed(self, state, state_desc):
+        log.info("%s state changed to %d (%s)", self, state, state_desc)
+
+    def call_ended(self, cause, cause_desc):
+        log.info("%s ended (cause: %d -- %s)", self, cause, cause_desc)
 
 
 class CLIProtocol(AMIProtocol):
@@ -36,10 +46,19 @@ class CLIProtocol(AMIProtocol):
 
     def login_successful(self, resp):
         log.info("Successfully logged in")
+        self.manager = CallManager(self)
+        self.manager.listen_for_incoming_calls(self.create_incoming_call)
+        self.manager.setup_filters()
 
     def login_failed(self, exc):
         log.error("Failed logging in: %s", exc)
         self.transport.close()
+
+    def create_incoming_call(self, headers):
+        log.info("Incoming call from %s (%s) to %s",
+                 headers['CallerIDNum'], headers.get('CallerIDName', ''),
+                 headers['Exten'])
+        return CLICall()
 
 
 def create_parser(description):
